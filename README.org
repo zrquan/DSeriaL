@@ -1,0 +1,38 @@
+#+TITLE: DSeriaL
+
+DSeriaL 是用来构建 Java 序列化数据的 DSL(domain-specific language)，代码参考 [[https://github.com/Marcono1234/serial-builder][serial-builder]]
+
+比如想要构建以下 Java 类的序列化数据：
+#+begin_src java
+public class SimpleSerializableClass implements Serializable {
+    public static final long serialVersionUID = 1L;
+
+    public int i;
+
+    public SimpleSerializableClass(int i) {
+        this.i = i;
+    }
+}
+#+end_src
+
+可使用以下代码：
+#+begin_src kotlin
+serial {
+    descriptors {
+        desc(
+            type = SimpleSerializableClass::class.java,
+            uid = SimpleSerializableClass.serialVersionUID,
+            flags = SC_SERIALIZABLE
+        ) {
+            primitiveFields {
+                "i" type Int::class.java
+            }
+        }
+    }
+    slot {
+        primitiveFields {
+            intVal(1)
+        }
+    }
+}
+#+end_src
