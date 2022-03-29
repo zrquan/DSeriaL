@@ -214,9 +214,7 @@ class SerialBuilder : Slot {
         run { pendingPostObjectActions.removeLast() }
 
         val dummyElementCount = objectArrayElementCounts.removeLast()
-        if (dummyElementCount != null) {
-            throw IllegalStateException("Unexpected element count: $dummyElementCount")
-        }
+        check(dummyElementCount == null) { "Unexpected element count: $dummyElementCount" }
 
         if (nestingDepth == 0) {
             if (!objectArrayElementCounts.isEmpty()) {

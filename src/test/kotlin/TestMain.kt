@@ -11,6 +11,8 @@ fun serialize(obj: Serializable): ByteArray {
     return out.toByteArray()
 }
 
+fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
+
 fun main() {
     val actualData =
         serial {
@@ -35,8 +37,6 @@ fun main() {
         }
 
     val expectedData = serialize(SimpleSerializableClass(1))
-
-    fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
 
     println("Work as expected: ${actualData.contentEquals(expectedData)}")
     println("Actual data: ${actualData?.toHex()}")
