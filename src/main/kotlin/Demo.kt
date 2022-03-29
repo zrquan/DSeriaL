@@ -26,7 +26,7 @@ class DescriptorsBuilder(
         build: Descriptor.() -> Unit
     ) {
         val handleIndex = nextHandleIndex.getAndIncrement()
-        HandleAccess.INSTANCE.assignIndex(unassignedHandle, handleIndex)
+        Handle.assignIndex(unassignedHandle, handleIndex)
 
         output { it.writeByte(TC_CLASSDESC.toInt()) }
         fieldActions = mutableListOf()
@@ -70,7 +70,7 @@ class DescriptorsBuilder(
     }
 
     private fun finishAndGetParent() {
-        HandleAccess.INSTANCE.assignIndex(postDescriptorHierarchyHandle, nextHandleIndex.getAndIncrement())
+        Handle.assignIndex(postDescriptorHierarchyHandle, nextHandleIndex.getAndIncrement())
     }
 
     /**
