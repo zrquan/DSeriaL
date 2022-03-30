@@ -167,7 +167,7 @@ class UncheckedBlockDataOutputStream(out: OutputStream) : DataOutput, Closeable 
         write(strBytes)
     }
 
-    fun writeSerialArray(vararg array: Boolean) {
+    fun writeSerialArray(array: BooleanArray) {
         try {
             currentDataOut.writeInt(array.size)
             array.forEach { currentDataOut.writeBoolean(it) }
@@ -176,7 +176,7 @@ class UncheckedBlockDataOutputStream(out: OutputStream) : DataOutput, Closeable 
         }
     }
 
-    fun writeSerialArray(vararg array: Byte) {
+    fun writeSerialArray(array: ByteArray) {
         try {
             currentDataOut.writeInt(array.size)
             array.forEach { currentDataOut.writeByte(it.toInt()) }
@@ -185,7 +185,7 @@ class UncheckedBlockDataOutputStream(out: OutputStream) : DataOutput, Closeable 
         }
     }
 
-    fun writeSerialArray(vararg array: Char) {
+    fun writeSerialArray(array: CharArray) {
         try {
             currentDataOut.writeInt(array.size)
             array.forEach { currentDataOut.writeChar(it.code) }
@@ -194,7 +194,7 @@ class UncheckedBlockDataOutputStream(out: OutputStream) : DataOutput, Closeable 
         }
     }
 
-    fun writeSerialArray(vararg array: Short) {
+    fun writeSerialArray(array: ShortArray) {
         try {
             currentDataOut.writeInt(array.size)
             array.forEach { currentDataOut.writeShort(it.toInt()) }
@@ -203,7 +203,7 @@ class UncheckedBlockDataOutputStream(out: OutputStream) : DataOutput, Closeable 
         }
     }
 
-    fun writeSerialArray(vararg array: Int) {
+    fun writeSerialArray(array: IntArray) {
         try {
             currentDataOut.writeInt(array.size)
             array.forEach { currentDataOut.writeInt(it) }
@@ -212,7 +212,7 @@ class UncheckedBlockDataOutputStream(out: OutputStream) : DataOutput, Closeable 
         }
     }
 
-    fun writeSerialArray(vararg array: Long) {
+    fun writeSerialArray(array: LongArray) {
         try {
             currentDataOut.writeInt(array.size)
             array.forEach { currentDataOut.writeLong(it) }
@@ -221,7 +221,7 @@ class UncheckedBlockDataOutputStream(out: OutputStream) : DataOutput, Closeable 
         }
     }
 
-    fun writeSerialArray(vararg array: Float) {
+    fun writeSerialArray(array: FloatArray) {
         try {
             currentDataOut.writeInt(array.size)
             array.forEach { currentDataOut.writeFloat(it) }
@@ -230,7 +230,7 @@ class UncheckedBlockDataOutputStream(out: OutputStream) : DataOutput, Closeable 
         }
     }
 
-    fun writeSerialArray(vararg array: Double) {
+    fun writeSerialArray(array: DoubleArray) {
         try {
             currentDataOut.writeInt(array.size)
             array.forEach { currentDataOut.writeDouble(it) }

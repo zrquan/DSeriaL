@@ -48,6 +48,14 @@ interface SlotPrimitiveFields {
 }
 
 @DSeriaL
+interface ArrayElements {
+    // Use + for adding primitive element, e.g. +10L
+    operator fun Any.unaryPlus() = primitiveElements(this)
+
+    fun primitiveElements(elements: Any)
+}
+
+@DSeriaL
 interface Slot {
     fun primitiveFields(build: SlotPrimitiveFields.() -> Unit)
     fun objectFields(build: SerialBuilder.() -> Unit)

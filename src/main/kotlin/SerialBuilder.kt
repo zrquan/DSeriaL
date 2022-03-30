@@ -1,12 +1,10 @@
 import java.io.ByteArrayOutputStream
-import java.io.ObjectStreamConstants
-import java.io.ObjectStreamConstants.TC_CLASS
-import java.io.ObjectStreamConstants.TC_ENUM
+import java.io.ObjectStreamConstants.*
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields {
+class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields, ArrayElements {
     private var nestingDepth = 0
     private val nextHandleIndex = AtomicInteger(0)
     private val pendingPostObjectActions: Deque<Block> = LinkedList()
@@ -18,8 +16,8 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields {
     private val out = UncheckedBlockDataOutputStream(binOut)
 
     init {
-        out.writeShort(ObjectStreamConstants.STREAM_MAGIC.toInt())
-        out.writeShort(ObjectStreamConstants.STREAM_VERSION.toInt())
+        out.writeShort(STREAM_MAGIC.toInt())
+        out.writeShort(STREAM_VERSION.toInt())
     }
 
     private lateinit var descriptorsBuilder: DescriptorsBuilder
@@ -55,7 +53,7 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields {
     fun nil() {
         run {
             val oldMode = out.setBlockDataMode(false)
-            out.writeByte(ObjectStreamConstants.TC_NULL.toInt())
+            out.writeByte(TC_NULL.toInt())
             out.setBlockDataMode(oldMode)
         }
         onStartedObject(false)
@@ -99,8 +97,37 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields {
         run { pendingPostObjectActions.removeLast() }
     }
 
-    fun array(build: SerialBuilder.() -> Unit) {
+    fun array(
+        unassignedHandle: Handle = Handle(),
+        type: Class<*>,
+        uid: Long?,
+        flags: Byte = SC_SERIALIZABLE,
+        build: ArrayElements.() -> Unit
+    ) {
+        nestingDepth++
 
+        val oldMode = AtomicBoolean()
+        run {
+            val oldModeValue = out.setBlockDataMode(false)
+            oldMode.set(oldModeValue)
+            out.writeByte(TC_ARRAY.toInt())
+        }
+        pendingPostObjectActions.addLast {
+            out.setBlockDataMode(oldMode.get())
+        }
+        onStartedObject(true)
+
+        initDescriptorHierarchy(unassignedHandle)
+        descriptors { desc(type = type, uid = uid, flags = flags) {} }
+
+        this.build()
+
+        // end array
+        nestingDepth--
+        run { pendingPostObjectActions.removeLast() }
+
+        val dummyElementCount = objectArrayElementCounts.removeLast()
+        check(dummyElementCount == null) { "Unexpected element count: $dummyElementCount" }
     }
 
     fun beginSerializableObject(unassignedHandle: Handle) {
@@ -110,7 +137,7 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields {
         run {
             val oldModeValue = out.setBlockDataMode(false)
             oldMode.set(oldModeValue)
-            out.writeByte(ObjectStreamConstants.TC_OBJECT.toInt())
+            out.writeByte(TC_OBJECT.toInt())
         }
         pendingPostObjectActions.addLast {
             out.setBlockDataMode(oldMode.get())
@@ -254,5 +281,19 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields {
     private fun getSerialData(): ByteArray {
         out.close()
         return binOut.toByteArray()
+    }
+
+    override fun primitiveElements(elements: Any) {
+        when (elements) {
+            is IntArray -> run { out.writeSerialArray(elements) }
+            is BooleanArray -> run { out.writeSerialArray(elements) }
+            is ByteArray -> run { out.writeSerialArray(elements) }
+            is FloatArray -> run { out.writeSerialArray(elements) }
+            is ShortArray -> run { out.writeSerialArray(elements) }
+            is LongArray -> run { out.writeSerialArray(elements) }
+            is CharArray -> run { out.writeSerialArray(elements) }
+            is DoubleArray -> run { out.writeSerialArray(elements) }
+            else -> throw IllegalStateException("Not a primitive array: ${elements::class.java}")
+        }
     }
 }

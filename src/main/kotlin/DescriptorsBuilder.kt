@@ -48,7 +48,15 @@ class DescriptorsBuilder(
         if (!typeName.endsWith("[]")) {
             return typeName
         } else {
-            TODO("handle array type name")
+            val classGetName = StringBuilder()
+            var elementTypeName = typeName
+
+            while (elementTypeName.endsWith("[]")) {
+                classGetName.append("[")
+                elementTypeName = elementTypeName.substringBeforeLast("[")
+            }
+
+            return classGetName.append(getJvmTypeName(elementTypeName)).toString()
         }
     }
 

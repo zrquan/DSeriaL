@@ -154,4 +154,27 @@ class AllTests : StringSpec({
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }
+
+    "处理数组类型" {
+        val actualData = serial {
+            descriptors {
+                desc(
+                    type = ClassWithArray::class.java,
+                    uid = ClassWithArray.serialVersionUID,
+                ) { objectFields { "ints" otype IntArray::class.java } }
+            }
+            slot {
+                objectFields {
+                    array(
+                        type = IntArray::class.java,
+                        uid = null
+                    ) { +intArrayOf(1, 2, 3) }
+                }
+            }
+        }
+
+        val expectedData = serialize(ClassWithArray(intArrayOf(1, 2, 3)))
+
+        actualData?.toHex() shouldBe expectedData.toHex()
+    }
 })
