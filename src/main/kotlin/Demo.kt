@@ -1,6 +1,6 @@
 fun serial(
     unassignedHandle: Handle = Handle(),
-    build: SerialBuilder.() -> Unit
+    build: TopLevel.() -> Unit
 ): ByteArray? =
     with(SerialBuilder()) {
         beginSerializableObject(unassignedHandle)

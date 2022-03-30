@@ -6,7 +6,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-class SerialBuilder : Slot, SlotPrimitiveFields {
+class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields {
     private var nestingDepth = 0
     private val nextHandleIndex = AtomicInteger(0)
     private val pendingPostObjectActions: Deque<Block> = LinkedList()
@@ -99,6 +99,10 @@ class SerialBuilder : Slot, SlotPrimitiveFields {
         run { pendingPostObjectActions.removeLast() }
     }
 
+    fun array(build: SerialBuilder.() -> Unit) {
+
+    }
+
     fun beginSerializableObject(unassignedHandle: Handle) {
         nestingDepth++
 
@@ -146,7 +150,7 @@ class SerialBuilder : Slot, SlotPrimitiveFields {
         }
     }
 
-    fun descriptors(build: DescriptorsBuilder.() -> Unit) {
+    override fun descriptors(build: DescriptorsBuilder.() -> Unit) {
         descriptorsBuilder.build()
         descriptorsBuilder.finish()
     }
@@ -154,7 +158,7 @@ class SerialBuilder : Slot, SlotPrimitiveFields {
     private val hasWrittenSlot: Deque<AtomicBoolean> = LinkedList()
     private val fieldActions: Deque<Queue<Block>> = LinkedList()  // ?
 
-    fun slot(build: Slot.() -> Unit) {
+    override fun slot(build: Slot.() -> Unit) {
         hasWrittenSlot.addLast(AtomicBoolean(false))
         fieldActions.addLast(LinkedList())
         this.build()

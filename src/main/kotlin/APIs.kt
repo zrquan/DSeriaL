@@ -30,6 +30,12 @@ interface DescriptorObjectFields {
 }
 
 @DSeriaL
+interface TopLevel {
+    fun descriptors(build: DescriptorsBuilder.() -> Unit)
+    fun slot(build: Slot.() -> Unit)
+}
+
+@DSeriaL
 interface SlotPrimitiveFields {
     fun intVal(i: Int)
     fun byteVal(b: Byte)
