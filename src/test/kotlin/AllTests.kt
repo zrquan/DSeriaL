@@ -103,14 +103,12 @@ class AllTests : StringSpec({
                 desc(
                     type = HierarchySub::class.java,
                     uid = HierarchySub.serialVersionUID,
-                    flags = SC_SERIALIZABLE
                 ) {
                     primitiveFields { "c" ptype Char::class.java }
                 }
                 desc(
                     type = HierarchyBase::class.java,
                     uid = HierarchyBase.serialVersionUID,
-                    flags = SC_SERIALIZABLE
                 ) {
                     primitiveFields { "i" ptype Int::class.java }
                 }

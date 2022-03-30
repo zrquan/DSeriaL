@@ -1,5 +1,5 @@
 import java.io.ObjectStreamClass
-import java.io.ObjectStreamConstants
+import java.io.ObjectStreamConstants.*
 import java.util.concurrent.atomic.AtomicInteger
 
 class DescriptorsBuilder(
@@ -12,19 +12,19 @@ class DescriptorsBuilder(
 
     private var descriptorName: String = ""
     private var uid: Long = 0L
-    private var flags: Byte = ObjectStreamConstants.SC_SERIALIZABLE
+    private var flags: Byte = SC_SERIALIZABLE
 
     fun desc(
         unassignedHandle: Handle = Handle(),
         type: Class<*>,
         uid: Long? = null,
-        flags: Byte,
+        flags: Byte = SC_SERIALIZABLE,
         build: Descriptor.() -> Unit
     ) {
         val handleIndex = nextHandleIndex.getAndIncrement()
         Handle.assignIndex(unassignedHandle, handleIndex)
 
-        output { it.writeByte(ObjectStreamConstants.TC_CLASSDESC.toInt()) }
+        output { it.writeByte(TC_CLASSDESC.toInt()) }
         fieldActions = mutableListOf()
 
         this.descriptorName = typeNameToClassGetName(type.typeName)
@@ -60,13 +60,13 @@ class DescriptorsBuilder(
             // 还没搞懂 BlockDataMode
             it.setBlockDataMode(true)
             it.setBlockDataMode(false)
-            it.writeByte(ObjectStreamConstants.TC_ENDBLOCKDATA.toInt())
+            it.writeByte(TC_ENDBLOCKDATA.toInt())
         }
         fieldActions.clear()
     }
 
     fun finish() {
-        output { it.writeByte(ObjectStreamConstants.TC_NULL.toInt()) }
+        output { it.writeByte(TC_NULL.toInt()) }
         finishAndGetParent()
     }
 
