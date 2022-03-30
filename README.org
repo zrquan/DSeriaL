@@ -1,16 +1,27 @@
-#+TITLE: DSeriaL
+#+TITLE: DSeriaL (施工中)
 
 DSeriaL 是用来构建 Java 序列化数据的 DSL(domain-specific language)，代码参考 [[https://github.com/Marcono1234/serial-builder][serial-builder]]
 
 比如想要构建以下 Java 类的序列化数据：
 #+begin_src java
-public class SimpleSerializableClass implements Serializable {
+public class HierarchyBase implements Serializable {
     public static final long serialVersionUID = 1L;
 
     public int i;
 
-    public SimpleSerializableClass(int i) {
+    public HierarchyBase(int i) {
         this.i = i;
+    }
+}
+
+public class HierarchySub extends HierarchyBase {
+    public static final long serialVersionUID = 1L;
+
+    public char c;
+
+    public HierarchySub(int i, char c) {
+        super(i);
+        this.c = c;
     }
 }
 #+end_src
@@ -20,19 +31,19 @@ public class SimpleSerializableClass implements Serializable {
 serial {
     descriptors {
         desc(
-            type = SimpleSerializableClass::class.java,
-            uid = SimpleSerializableClass.serialVersionUID,
-            flags = SC_SERIALIZABLE
+            type = HierarchySub::class.java,
+            uid = HierarchySub.serialVersionUID,
         ) {
-            primitiveFields {
-                "i" type Int::class.java
-            }
+            primitiveFields { "c" ptype Char::class.java }
+        }
+        desc(
+            type = HierarchyBase::class.java,
+            uid = HierarchyBase.serialVersionUID,
+        ) {
+            primitiveFields { "i" ptype Int::class.java }
         }
     }
-    slot {
-        primitiveFields {
-            intVal(1)
-        }
-    }
+    slot { primitiveFields { intVal(5) } }
+    slot { primitiveFields { charVal('a') } }
 }
 #+end_src
