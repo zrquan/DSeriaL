@@ -1,17 +1,16 @@
 import java.io.ByteArrayOutputStream
+import java.io.ObjectStreamClass
 import java.io.ObjectStreamConstants.*
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.concurrent.thread
 
-@DSeriaL
 class DescriptorsBuilder(
     private val parent: Any,
     private val nextHandleIndex: AtomicInteger,
     private val postDescriptorHierarchyHandle: Handle,
     private val output: ((UncheckedBlockDataOutputStream) -> Unit) -> Unit
-) : Descriptor, DescriptorPrimitiveFields {
+) : Descriptor, DescriptorPrimitiveFields, DescriptorObjectFields {
     private lateinit var fieldActions: MutableList<(UncheckedBlockDataOutputStream) -> Unit>
 
     private var descriptorName: String = ""
@@ -21,7 +20,7 @@ class DescriptorsBuilder(
     fun desc(
         unassignedHandle: Handle = Handle(),
         type: Class<*>,
-        uid: Long,
+        uid: Long? = null,
         flags: Byte,
         build: Descriptor.() -> Unit
     ) {
@@ -32,11 +31,16 @@ class DescriptorsBuilder(
         fieldActions = mutableListOf()
 
         this.descriptorName = typeNameToClassGetName(type.typeName)
-        this.uid = uid
+        this.uid = uid ?: getUidByType(type)
         this.flags = flags
         this.build()
         endDesc()
     }
+
+    /**
+     * 查找可被序列化的目标类型，返回它的 UID 或抛出 NPE 异常
+     */
+    private fun getUidByType(type: Class<*>): Long = ObjectStreamClass.lookup(type)!!.serialVersionUID
 
     private fun typeNameToClassGetName(typeName: String): String {
         if (!typeName.endsWith("[]")) {
@@ -78,6 +82,8 @@ class DescriptorsBuilder(
      */
     override fun primitiveFields(build: DescriptorPrimitiveFields.() -> Unit) = this.build()
 
+    override fun objectFields(build: DescriptorObjectFields.() -> Unit) = this.build()
+
     private fun getJvmTypeName(name: String) =
         when (name) {
             "int" -> "I"
@@ -102,10 +108,30 @@ class DescriptorsBuilder(
             it.writeUTF(name)
         }
     }
+
+    override fun objectField(name: String, typeName: String) {
+        val nameBuilder = StringBuilder()
+        var elementTypeName = typeName
+
+        while (elementTypeName.endsWith("[]")) {
+            nameBuilder.append("[")
+            elementTypeName = elementTypeName.substringBeforeLast("[")
+        }
+
+        val jvmTypeName = nameBuilder.append(getJvmTypeName(elementTypeName)).toString()
+
+        nextHandleIndex.getAndIncrement()
+
+        fieldActions.add {
+            it.writeByte(jvmTypeName[0].code)
+            it.writeUTF(name)
+            it.writeSerialString(jvmTypeName)
+        }
+    }
 }
 
 @DSeriaL
-class SerialBuilder : Slot {
+class SerialBuilder : Slot, SlotPrimitiveFields {
     private var nestingDepth = 0
     private val nextHandleIndex = AtomicInteger(0)
     private val pendingPostObjectActions: Deque<Block> = LinkedList()
@@ -122,6 +148,55 @@ class SerialBuilder : Slot {
     }
 
     private lateinit var descriptorsBuilder: DescriptorsBuilder
+
+    fun serialObj(unassignedHandle: Handle = Handle(), build: SerialBuilder.() -> Unit) {
+        beginSerializableObject(unassignedHandle)
+        this.build()
+        finish()
+    }
+
+    fun jclass(unassignedHandle: Handle = Handle(), build: DescriptorsBuilder.() -> Unit) {
+        nestingDepth++
+
+        val oldMode = AtomicBoolean()
+        run {
+            val oldModeValue = out.setBlockDataMode(false)
+            oldMode.set(oldModeValue)
+            out.writeByte(TC_CLASS.toInt())
+        }
+        pendingPostObjectActions.addLast {
+            out.setBlockDataMode(oldMode.get())
+        }
+        onStartedObject(false)
+
+        initDescriptorHierarchy(unassignedHandle)
+        descriptors(build)
+
+        // end class
+        nestingDepth--
+        run { pendingPostObjectActions.removeLast() }
+    }
+
+    fun nil() {
+        run {
+            val oldMode = out.setBlockDataMode(false)
+            out.writeByte(TC_NULL.toInt())
+            out.setBlockDataMode(oldMode)
+        }
+        onStartedObject(false)
+    }
+
+    fun string(text: String, unassignedHandle: Handle = Handle()) {
+        val handleIndex = nextHandleIndex.getAndIncrement()
+        Handle.assignIndex(unassignedHandle, handleIndex)
+
+        run {
+            val oldMode = out.setBlockDataMode(false)
+            out.writeSerialString(text)
+            out.setBlockDataMode(oldMode)
+        }
+        onStartedObject(false)
+    }
 
     fun beginSerializableObject(unassignedHandle: Handle) {
         nestingDepth++
@@ -197,15 +272,55 @@ class SerialBuilder : Slot {
         primitiveFieldsActions.forEach { it(out) }
     }
 
+    override fun objectFields(build: SerialBuilder.() -> Unit) = this.build()
+
     override fun charVal(c: Char) {
         primitiveFieldsActions.add {
             it.writeChar(c.code)
         }
     }
 
+    override fun longVal(j: Long) {
+        primitiveFieldsActions.add {
+            it.writeLong(j)
+        }
+    }
+
+    override fun floatVal(f: Float) {
+        primitiveFieldsActions.add {
+            it.writeFloat(f)
+        }
+    }
+
+    override fun shortVal(s: Short) {
+        primitiveFieldsActions.add {
+            it.writeShort(s.toInt())
+        }
+    }
+
+    override fun doubleVal(d: Double) {
+        primitiveFieldsActions.add {
+            it.writeDouble(d)
+        }
+    }
+
+    override fun booleanVal(z: Boolean) {
+        primitiveFieldsActions.add {
+            primitiveFieldsActions.add {
+                it.writeBoolean(z)
+            }
+        }
+    }
+
     override fun intVal(i: Int) {
         primitiveFieldsActions.add {
             it.writeInt(i)
+        }
+    }
+
+    override fun byteVal(b: Byte) {
+        primitiveFieldsActions.add {
+            it.writeByte(b.toInt())
         }
     }
 
