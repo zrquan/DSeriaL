@@ -16,7 +16,7 @@ fun serialize(obj: Serializable): ByteArray {
 fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
 
 class AllTests : StringSpec({
-    "simple class" {
+    "处理简单的可序列化类" {
         val actualData = serial {
             descriptors {
                 desc(
@@ -41,7 +41,7 @@ class AllTests : StringSpec({
         actualData?.toHex() shouldBe expectedData.toHex()
     }
 
-    "nested class" {
+    "处理嵌套关系" {
         val actualData = serial {
             descriptors {
                 desc(
@@ -93,6 +93,33 @@ class AllTests : StringSpec({
         val expectedData: ByteArray = serialize(
             NestedSerializableClass(1, 10f, Serializable::class.java, "test", NestedSerializableClass.NestedClass(5L))
         )
+
+        actualData?.toHex() shouldBe expectedData.toHex()
+    }
+
+    "处理继承关系" {
+        val actualData = serial {
+            descriptors {
+                desc(
+                    type = HierarchySub::class.java,
+                    uid = HierarchySub.serialVersionUID,
+                    flags = SC_SERIALIZABLE
+                ) {
+                    primitiveFields { "c" ptype Char::class.java }
+                }
+                desc(
+                    type = HierarchyBase::class.java,
+                    uid = HierarchyBase.serialVersionUID,
+                    flags = SC_SERIALIZABLE
+                ) {
+                    primitiveFields { "i" ptype Int::class.java }
+                }
+            }
+            slot { primitiveFields { intVal(5) } }
+            slot { primitiveFields { charVal('a') } }
+        }
+
+        val expectedData: ByteArray = serialize(HierarchySub(5, 'a'))
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }
