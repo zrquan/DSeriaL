@@ -6,6 +6,7 @@ class DescriptorsBuilder(
     private val parent: Any,
     private val nextHandleIndex: AtomicInteger,
     private val postDescriptorHierarchyHandle: Handle,
+    private var isEnum: Boolean = false,
     private val output: ((UncheckedBlockDataOutputStream) -> Unit) -> Unit
 ) : Descriptor, DescriptorPrimitiveFields, DescriptorObjectFields {
     private lateinit var fieldActions: MutableList<(UncheckedBlockDataOutputStream) -> Unit>
@@ -27,8 +28,12 @@ class DescriptorsBuilder(
         output { it.writeByte(TC_CLASSDESC.toInt()) }
         fieldActions = mutableListOf()
 
+        this.uid = if (this.isEnum) {
+            check(type.isEnum || type == Enum::class.java) { "Not an Enum class: ${type.typeName}" }
+            0  // Enum uses 0 as UID
+        } else uid ?: getUidByType(type)
+
         this.descriptorName = typeNameToClassGetName(type.typeName)
-        this.uid = uid ?: getUidByType(type)
         this.flags = flags
         this.build()
         endDesc()
@@ -57,7 +62,6 @@ class DescriptorsBuilder(
         }
         fieldActions.forEach(output)
         output {
-            // 还没搞懂 BlockDataMode
             it.setBlockDataMode(true)
             it.setBlockDataMode(false)
             it.writeByte(TC_ENDBLOCKDATA.toInt())

@@ -1,5 +1,7 @@
 import java.io.ByteArrayOutputStream
 import java.io.ObjectStreamConstants
+import java.io.ObjectStreamConstants.TC_CLASS
+import java.io.ObjectStreamConstants.TC_ENUM
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -35,7 +37,7 @@ class SerialBuilder : Slot, SlotPrimitiveFields {
         run {
             val oldModeValue = out.setBlockDataMode(false)
             oldMode.set(oldModeValue)
-            out.writeByte(ObjectStreamConstants.TC_CLASS.toInt())
+            out.writeByte(TC_CLASS.toInt())
         }
         pendingPostObjectActions.addLast {
             out.setBlockDataMode(oldMode.get())
@@ -71,6 +73,32 @@ class SerialBuilder : Slot, SlotPrimitiveFields {
         onStartedObject(false)
     }
 
+    fun enum(constName: String, unassignedHandle: Handle = Handle(), build: DescriptorsBuilder.() -> Unit) {
+        nestingDepth++
+
+        val oldMode = AtomicBoolean()
+        run {
+            val oldModeValue = out.setBlockDataMode(false)
+            oldMode.set(oldModeValue)
+            out.writeByte(TC_ENUM.toInt())
+        }
+        pendingPostObjectActions.addLast {
+            out.setBlockDataMode(oldMode.get())
+        }
+        onStartedObject(false)
+
+        initDescriptorHierarchy(unassignedHandle, isEnum = true)
+        descriptors(build)
+
+        // write constant name
+        nextHandleIndex.getAndIncrement()
+        run { out.writeSerialString(constName) }
+
+        // end enum
+        nestingDepth--
+        run { pendingPostObjectActions.removeLast() }
+    }
+
     fun beginSerializableObject(unassignedHandle: Handle) {
         nestingDepth++
 
@@ -88,11 +116,12 @@ class SerialBuilder : Slot, SlotPrimitiveFields {
         initDescriptorHierarchy(unassignedHandle)
     }
 
-    private fun initDescriptorHierarchy(postDescriptorHierarchyHandle: Handle) {
+    private fun initDescriptorHierarchy(postDescriptorHierarchyHandle: Handle, isEnum: Boolean = false) {
         descriptorsBuilder = DescriptorsBuilder(
             this,
             nextHandleIndex,
-            postDescriptorHierarchyHandle
+            postDescriptorHierarchyHandle,
+            isEnum
         ) { action: (UncheckedBlockDataOutputStream) -> Unit ->
             run { action(out) }
         }

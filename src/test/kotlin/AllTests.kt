@@ -1,7 +1,9 @@
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.io.*
+import java.io.ObjectStreamConstants.SC_ENUM
 import java.io.ObjectStreamConstants.SC_SERIALIZABLE
+import kotlin.experimental.or
 
 fun serialize(obj: Serializable): ByteArray {
     val out = ByteArrayOutputStream()
@@ -118,6 +120,37 @@ class AllTests : StringSpec({
         }
 
         val expectedData: ByteArray = serialize(HierarchySub(5, 'a'))
+
+        actualData?.toHex() shouldBe expectedData.toHex()
+    }
+
+    "处理枚举类型" {
+        val actualData = serial {
+            descriptors {
+                desc(
+                    type = ClassWithEnum::class.java,
+                    uid = ClassWithEnum.serialVersionUID
+                ) {
+                    objectFields { "e" otype TestEnum::class.java }
+                }
+            }
+            slot {
+                objectFields {
+                    enum("TEST") {
+                        desc(
+                            type = TestEnum::class.java,
+                            flags = SC_SERIALIZABLE or SC_ENUM
+                        ) {}
+                        desc(
+                            type = Enum::class.java,
+                            flags = SC_SERIALIZABLE or SC_ENUM
+                        ) {}
+                    }
+                }
+            }
+        }
+
+        val expectedData = serialize(ClassWithEnum(TestEnum.TEST))
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }
