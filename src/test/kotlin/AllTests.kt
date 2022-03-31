@@ -161,19 +161,50 @@ class AllTests : StringSpec({
                 desc(
                     type = ClassWithArray::class.java,
                     uid = ClassWithArray.serialVersionUID,
-                ) { objectFields { "ints" otype IntArray::class.java } }
+                ) {
+                    objectFields {
+                        "ints" otype IntArray::class.java
+                        "objects" otype Array<Any>::class.java
+                    }
+                }
             }
             slot {
                 objectFields {
-                    array(
-                        type = IntArray::class.java,
-                        uid = null
-                    ) { +intArrayOf(1, 2, 3) }
+                    array(type = IntArray::class.java) { +intArrayOf(1, 2, 3) }
+                    array(type = Array<Serializable>::class.java) {
+                        objectElements {
+                            // bug: string("test \u0000 \u0100 \uD800\uDC00 \uDC00")
+                            string("test")
+                            serialObj {
+                                descriptors {
+                                    desc(
+                                        type = SimpleSerializableClass::class.java,
+                                        uid = SimpleSerializableClass.serialVersionUID,
+                                    ) {
+                                        primitiveFields {
+                                            "i" ptype Int::class.java
+                                        }
+                                    }
+                                }
+                                slot {
+                                    primitiveFields {
+                                        intVal(1)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        val expectedData = serialize(ClassWithArray(intArrayOf(1, 2, 3)))
+        val expectedData = serialize(
+            ClassWithArray(
+                intArrayOf(1, 2, 3),
+                // bug: arrayOf("test \u0000 \u0100 \uD800\uDC00 \uDC00", SimpleSerializableClass(1))
+                arrayOf("test", SimpleSerializableClass(1))
+            )
+        )
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }

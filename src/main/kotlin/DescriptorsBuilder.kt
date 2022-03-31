@@ -56,7 +56,20 @@ class DescriptorsBuilder(
                 elementTypeName = elementTypeName.substringBeforeLast("[")
             }
 
-            return classGetName.append(getJvmTypeName(elementTypeName)).toString()
+            return classGetName.append(
+                when (elementTypeName) {
+                    "int" -> "I"
+                    "byte" -> "B"
+                    "char" -> "C"
+                    "long" -> "J"
+                    "float" -> "F"
+                    "short" -> "S"
+                    "double" -> "D"
+                    "boolean" -> "Z"
+                    // Note: Class.getName() does not replace '.' with '/'
+                    else -> "L$elementTypeName;"
+                }
+            ).toString()
         }
     }
 

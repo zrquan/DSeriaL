@@ -1,8 +1,12 @@
 import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
+import java.io.IOException
 import java.io.ObjectStreamConstants.*
+import java.io.UncheckedIOException
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.collections.ArrayList
 
 class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields, ArrayElements {
     private var nestingDepth = 0
@@ -100,7 +104,7 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields, ArrayElements {
     fun array(
         unassignedHandle: Handle = Handle(),
         type: Class<*>,
-        uid: Long?,
+        uid: Long? = null,
         flags: Byte = SC_SERIALIZABLE,
         build: ArrayElements.() -> Unit
     ) {
@@ -168,6 +172,10 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields, ArrayElements {
         }
     }
 
+    /**
+     * 如果当前的动作需要挂起，则添加到 actions 队列，否则直接执行
+     * @param block 需要执行的方法体
+     */
     private fun run(block: Block) {
         val actionsQueue = pendingObjectActions.peekLast()
         if (actionsQueue == null) {
@@ -195,14 +203,26 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields, ArrayElements {
         }
     }
 
-    private lateinit var primitiveFieldsActions: MutableList<(UncheckedBlockDataOutputStream) -> Unit>
+    private lateinit var primitiveFieldsActions: MutableList<(DataOutputStream) -> Unit>
 
     override fun primitiveFields(build: SlotPrimitiveFields.() -> Unit) {
         primitiveFieldsActions = mutableListOf()
         this.build()
 
         // Write primitive field values to output stream
-        primitiveFieldsActions.forEach { it(out) }
+        val tempOut = ByteArrayOutputStream()
+        val dataOut = DataOutputStream(tempOut)
+
+        primitiveFieldsActions.forEach { it(dataOut) }
+        primitiveFieldsActions.clear()
+
+        try {
+            dataOut.close()
+        } catch (e: IOException) {
+            throw UncheckedIOException(e)
+        }
+
+        run { out.write(tempOut.toByteArray()) }
     }
 
     override fun objectFields(build: SerialBuilder.() -> Unit) = this.build()
@@ -294,6 +314,20 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields, ArrayElements {
             is CharArray -> run { out.writeSerialArray(elements) }
             is DoubleArray -> run { out.writeSerialArray(elements) }
             else -> throw IllegalStateException("Not a primitive array: ${elements::class.java}")
+        }
+    }
+
+    override fun objectElements(build: SerialBuilder.() -> Unit) {
+        pendingObjectActions.addLast(ArrayList())
+        objectArrayElementCounts.addLast(AtomicInteger(0))
+        this.build()
+
+        // end elements
+        val actions = pendingObjectActions.removeLast()
+        val elementsCount = objectArrayElementCounts.removeLast().get()
+        run {
+            out.writeInt(elementsCount)
+            actions.forEach { it() }
         }
     }
 }

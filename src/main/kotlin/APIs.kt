@@ -53,6 +53,8 @@ interface ArrayElements {
     operator fun Any.unaryPlus() = primitiveElements(this)
 
     fun primitiveElements(elements: Any)
+
+    fun objectElements(build: SerialBuilder.() -> Unit)
 }
 
 @DSeriaL
