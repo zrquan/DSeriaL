@@ -239,7 +239,7 @@ class UncheckedBlockDataOutputStream(out: OutputStream) : DataOutput, Closeable 
         }
     }
 
-    fun isBlockDataModeActive() = pendingBlockData != null
+    private fun isBlockDataModeActive() = pendingBlockData != null
 
     fun setBlockDataMode(active: Boolean): Boolean {
         val wasActive = isBlockDataModeActive()

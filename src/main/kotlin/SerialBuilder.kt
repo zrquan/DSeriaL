@@ -1,19 +1,15 @@
-import java.io.ByteArrayOutputStream
-import java.io.DataOutputStream
-import java.io.IOException
+import java.io.*
 import java.io.ObjectStreamConstants.*
-import java.io.UncheckedIOException
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 
-class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields, ArrayElements {
+class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveFields, ArrayElements {
     private var nestingDepth = 0
     private val nextHandleIndex = AtomicInteger(0)
     private val pendingPostObjectActions: Deque<Block> = LinkedList()
 
-    // todo: 用来收集需要计算数量的写入动作，比如收集数组元素
     private val pendingObjectActions: Deque<MutableList<Block>> = LinkedList()
 
     private val binOut = ByteArrayOutputStream()
@@ -183,6 +179,83 @@ class SerialBuilder : TopLevel, Slot, SlotPrimitiveFields, ArrayElements {
         } else {
             actionsQueue.add(block)
         }
+    }
+
+    /**
+     * 目前只实现 V2 版本的序列化协议，所以默认开启 BlockData 模式
+     * @see java.io.ObjectStreamConstants.PROTOCOL_VERSION_2
+     */
+    override fun writeExternal(build: SerialBuilder.(DataOutput) -> Unit) {
+        run { out.setBlockDataMode(true) }
+
+        writeExternalData(build)
+
+        run { out.setBlockDataMode(false) }
+        run { out.writeByte(TC_ENDBLOCKDATA.toInt()) }
+    }
+
+    /**
+     * 用于计算 Externalizable 对象的嵌套层数，在调用 [writeExternalData] 时递增
+     */
+    private var currentScopeIndex = -1
+
+    private fun writeExternalData(build: SerialBuilder.(DataOutput) -> Unit) {
+        val originNestingDepth = nestingDepth
+        val scopeIndex = ++currentScopeIndex
+
+        val dataOutput = object : DataOutput {
+            private fun verify() {
+                check(scopeIndex == currentScopeIndex) { "Other output is currently active." }
+                check(originNestingDepth == nestingDepth) { "Previous builder call is incomplete." }
+            }
+
+            private fun run(block: Block) {
+                verify()
+                this@SerialBuilder.run(block)
+            }
+
+            override fun write(b: Int) = run { out.writeInt(b) }
+
+            override fun write(b: ByteArray) = run { out.write(b.clone()) }
+
+            override fun write(b: ByteArray, off: Int, len: Int) {
+                Objects.checkFromIndexSize(off, len, b.size)  // 边界检查
+                run { out.write(b.clone(), off, len) }
+            }
+
+            override fun writeBoolean(v: Boolean) = run { out.writeBoolean(v) }
+
+            override fun writeByte(v: Int) = run { out.writeByte(v) }
+
+            override fun writeShort(v: Int) = run { out.writeShort(v) }
+
+            override fun writeChar(v: Int) = run { out.writeChar(v) }
+            fun writeChar(c: Char) = writeChar(c.code)
+
+            override fun writeInt(v: Int) = run { out.writeInt(v) }
+
+            override fun writeLong(v: Long) = run { out.writeLong(v) }
+
+            override fun writeFloat(v: Float) = run { out.writeFloat(v) }
+
+            override fun writeDouble(v: Double) = run { out.writeDouble(v) }
+
+            override fun writeBytes(s: String) = run { out.writeBytes(s) }
+
+            override fun writeChars(s: String) = run { out.writeChars(s) }
+
+            override fun writeUTF(s: String) = run { out.writeUTF(s) }
+        }
+
+        try {
+            build(dataOutput)
+        } catch (e: IOException) {
+            throw UncheckedIOException(e)
+        }
+
+        check(nestingDepth == originNestingDepth) { "Builder call did not complete." }
+
+        currentScopeIndex--
     }
 
     override fun descriptors(build: DescriptorsBuilder.() -> Unit) {

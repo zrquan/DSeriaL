@@ -1,3 +1,5 @@
+import java.io.DataOutput
+
 typealias Block = () -> Unit
 
 @DslMarker
@@ -32,7 +34,14 @@ interface DescriptorObjectFields {
 @DSeriaL
 interface TopLevel {
     fun descriptors(build: DescriptorsBuilder.() -> Unit)
+}
+
+interface SerialTopLevel : TopLevel {
     fun slot(build: Slot.() -> Unit)
+}
+
+interface ExternalTopLevel : TopLevel {
+    fun writeExternal(build: SerialBuilder.(DataOutput) -> Unit)
 }
 
 @DSeriaL

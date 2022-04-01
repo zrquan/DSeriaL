@@ -1,8 +1,7 @@
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.io.*
-import java.io.ObjectStreamConstants.SC_ENUM
-import java.io.ObjectStreamConstants.SC_SERIALIZABLE
+import java.io.ObjectStreamConstants.*
 import kotlin.experimental.or
 
 fun serialize(obj: Serializable): ByteArray {
@@ -19,7 +18,7 @@ fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x
 
 class AllTests : StringSpec({
     "处理简单的可序列化类" {
-        val actualData = serial {
+        val actualData = Serial {
             descriptors {
                 desc(
                     type = SimpleSerializableClass::class.java,
@@ -44,7 +43,7 @@ class AllTests : StringSpec({
     }
 
     "处理嵌套关系" {
-        val actualData = serial {
+        val actualData = Serial {
             descriptors {
                 desc(
                     type = NestedSerializableClass::class.java,
@@ -100,7 +99,7 @@ class AllTests : StringSpec({
     }
 
     "处理继承关系" {
-        val actualData = serial {
+        val actualData = Serial {
             descriptors {
                 desc(
                     type = HierarchySub::class.java,
@@ -125,7 +124,7 @@ class AllTests : StringSpec({
     }
 
     "处理枚举类型" {
-        val actualData = serial {
+        val actualData = Serial {
             descriptors {
                 desc(
                     type = ClassWithEnum::class.java,
@@ -156,7 +155,7 @@ class AllTests : StringSpec({
     }
 
     "处理数组类型" {
-        val actualData = serial {
+        val actualData = Serial {
             descriptors {
                 desc(
                     type = ClassWithArray::class.java,
@@ -205,6 +204,43 @@ class AllTests : StringSpec({
                 arrayOf("test", SimpleSerializableClass(1))
             )
         )
+
+        actualData?.toHex() shouldBe expectedData.toHex()
+    }
+
+    "处理 Externalizable 接口的实现类" {
+        val actualData = External {
+            descriptors {
+                desc(
+                    type = SimpleExternalizableClass::class.java,
+                    uid = SimpleExternalizableClass.serialVersionUID,
+                    flags = SC_EXTERNALIZABLE or SC_BLOCK_DATA
+                ) {}
+            }
+            writeExternal {
+                it.write(5)
+                it.writeBoolean(true)
+
+                string("test")
+                array(type = Array<Serializable>::class.java) {
+                    objectElements {
+                        serialObj {
+                            descriptors {
+                                desc(
+                                    type = SimpleSerializableClass::class.java,
+                                    uid = SimpleSerializableClass.serialVersionUID
+                                ) {
+                                    primitiveFields { "i" ptype Int::class.java }
+                                }
+                            }
+                            slot { primitiveFields { intVal(1) } }
+                        }
+                    }
+                }
+            }
+        }
+
+        val expectedData = serialize(SimpleExternalizableClass())
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }
