@@ -5,7 +5,7 @@ fun Serial(
     unassignedHandle: Handle = Handle(),
     build: SerialTopLevel.() -> Unit
 ): ByteArray? =
-    with(SerialBuilder()) {
+    with(StreamBuilder()) {
         beginSerializableObject(unassignedHandle)
         build()
         finish()
@@ -18,7 +18,7 @@ fun External(
     unassignedHandle: Handle = Handle(),
     build: ExternalTopLevel.() -> Unit
 ): ByteArray? =
-    with(SerialBuilder()) {
+    with(StreamBuilder()) {
         beginSerializableObject(unassignedHandle)
         build()
         finish()

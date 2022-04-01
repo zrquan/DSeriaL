@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 
-class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveFields, ArrayElements {
+class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveFields, ArrayElements {
     private var nestingDepth = 0
     private val nextHandleIndex = AtomicInteger(0)
     private val pendingPostObjectActions: Deque<Block> = LinkedList()
@@ -22,7 +22,7 @@ class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
 
     private lateinit var descriptorsBuilder: DescriptorsBuilder
 
-    fun serialObj(unassignedHandle: Handle = Handle(), build: SerialBuilder.() -> Unit) {
+    fun serialObj(unassignedHandle: Handle = Handle(), build: StreamBuilder.() -> Unit) {
         beginSerializableObject(unassignedHandle)
         this.build()
         finish()
@@ -185,7 +185,7 @@ class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
      * 目前只实现 V2 版本的序列化协议，所以默认开启 BlockData 模式
      * @see java.io.ObjectStreamConstants.PROTOCOL_VERSION_2
      */
-    override fun writeExternal(build: SerialBuilder.(DataOutput) -> Unit) {
+    override fun writeExternal(build: StreamBuilder.(DataOutput) -> Unit) {
         run { out.setBlockDataMode(true) }
 
         writeExternalData(build)
@@ -199,7 +199,7 @@ class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
      */
     private var currentScopeIndex = -1
 
-    private fun writeExternalData(build: SerialBuilder.(DataOutput) -> Unit) {
+    private fun writeExternalData(build: StreamBuilder.(DataOutput) -> Unit) {
         val originNestingDepth = nestingDepth
         val scopeIndex = ++currentScopeIndex
 
@@ -211,7 +211,7 @@ class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
 
             private fun run(block: Block) {
                 verify()
-                this@SerialBuilder.run(block)
+                this@StreamBuilder.run(block)
             }
 
             override fun write(b: Int) = run { out.writeInt(b) }
@@ -298,11 +298,11 @@ class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         run { out.write(tempOut.toByteArray()) }
     }
 
-    override fun objectFields(build: SerialBuilder.() -> Unit) = this.build()
+    override fun objectFields(build: StreamBuilder.() -> Unit) = this.build()
 
     override fun prims(build: SlotPrimitiveFields.() -> Unit) = primitiveFields(build)
 
-    override fun objs(build: SerialBuilder.() -> Unit) = objectFields(build)
+    override fun objs(build: StreamBuilder.() -> Unit) = objectFields(build)
 
     override fun charVal(c: Char) {
         primitiveFieldsActions.add {
@@ -394,7 +394,7 @@ class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         }
     }
 
-    override fun elements(build: SerialBuilder.() -> Unit) {
+    override fun elements(build: StreamBuilder.() -> Unit) {
         pendingObjectActions.addLast(ArrayList())
         objectArrayElementCounts.addLast(AtomicInteger(0))
         this.build()

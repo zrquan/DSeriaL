@@ -29,7 +29,7 @@ interface SerialTopLevel : TopLevel {
 }
 
 interface ExternalTopLevel : TopLevel {
-    fun writeExternal(build: SerialBuilder.(DataOutput) -> Unit)
+    fun writeExternal(build: StreamBuilder.(DataOutput) -> Unit)
 }
 
 @DSeriaL
@@ -54,14 +54,14 @@ interface ArrayElements {
     /**
      * 添加 Object 对象到数组中
      */
-    fun elements(build: SerialBuilder.() -> Unit)
+    fun elements(build: StreamBuilder.() -> Unit)
 }
 
 @DSeriaL
 interface Slot {
     fun primitiveFields(build: SlotPrimitiveFields.() -> Unit)
-    fun objectFields(build: SerialBuilder.() -> Unit)
+    fun objectFields(build: StreamBuilder.() -> Unit)
 
     fun prims(build: SlotPrimitiveFields.() -> Unit)
-    fun objs(build: SerialBuilder.() -> Unit)
+    fun objs(build: StreamBuilder.() -> Unit)
 }
