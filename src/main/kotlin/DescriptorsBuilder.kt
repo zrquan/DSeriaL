@@ -8,7 +8,7 @@ class DescriptorsBuilder(
     private val postDescriptorHierarchyHandle: Handle,
     private var isEnum: Boolean = false,
     private val output: ((UncheckedBlockDataOutputStream) -> Unit) -> Unit
-) : Descriptor, DescriptorPrimitiveFields, DescriptorObjectFields {
+) : Descriptor {
     private lateinit var fieldActions: MutableList<(UncheckedBlockDataOutputStream) -> Unit>
 
     private var descriptorName: String = ""
@@ -98,13 +98,6 @@ class DescriptorsBuilder(
     private fun finishAndGetParent() {
         Handle.assignIndex(postDescriptorHierarchyHandle, nextHandleIndex.getAndIncrement())
     }
-
-    /**
-     * Switch the context to [DescriptorPrimitiveFields]
-     */
-    override fun primitiveFields(build: DescriptorPrimitiveFields.() -> Unit) = this.build()
-
-    override fun objectFields(build: DescriptorObjectFields.() -> Unit) = this.build()
 
     private fun getJvmTypeName(name: String) =
         when (name) {

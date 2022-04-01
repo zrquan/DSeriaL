@@ -300,6 +300,10 @@ class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
 
     override fun objectFields(build: SerialBuilder.() -> Unit) = this.build()
 
+    override fun prims(build: SlotPrimitiveFields.() -> Unit) = primitiveFields(build)
+
+    override fun objs(build: SerialBuilder.() -> Unit) = objectFields(build)
+
     override fun charVal(c: Char) {
         primitiveFieldsActions.add {
             it.writeChar(c.code)
@@ -390,7 +394,7 @@ class SerialBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         }
     }
 
-    override fun objectElements(build: SerialBuilder.() -> Unit) {
+    override fun elements(build: SerialBuilder.() -> Unit) {
         pendingObjectActions.addLast(ArrayList())
         objectArrayElementCounts.addLast(AtomicInteger(0))
         this.build()

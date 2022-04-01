@@ -7,27 +7,15 @@ annotation class DSeriaL
 
 @DSeriaL
 interface Descriptor {
-    fun primitiveFields(build: DescriptorPrimitiveFields.() -> Unit)
-    fun objectFields(build: DescriptorObjectFields.() -> Unit)
-}
-
-@DSeriaL
-interface DescriptorPrimitiveFields {
-    infix fun String.ptype(type: Class<*>) {
-        check(type.isPrimitive) { "Not a primitive type: ${type.typeName}" }
-        primitiveField(this, type.typeName)
+    infix fun String.type(type: Class<*>) {
+        if (type.isPrimitive) {
+            primitiveField(this, type.typeName)
+        } else {
+            objectField(this, type.typeName)
+        }
     }
 
     fun primitiveField(name: String, typeName: String)
-}
-
-@DSeriaL
-interface DescriptorObjectFields {
-    infix fun String.otype(type: Class<*>) {
-        check(!type.isPrimitive) { "Not an object type: ${type.typeName}" }
-        objectField(this, type.typeName)
-    }
-
     fun objectField(name: String, typeName: String)
 }
 
@@ -63,11 +51,17 @@ interface ArrayElements {
 
     fun primitiveElements(elements: Any)
 
-    fun objectElements(build: SerialBuilder.() -> Unit)
+    /**
+     * 添加 Object 对象到数组中
+     */
+    fun elements(build: SerialBuilder.() -> Unit)
 }
 
 @DSeriaL
 interface Slot {
     fun primitiveFields(build: SlotPrimitiveFields.() -> Unit)
     fun objectFields(build: SerialBuilder.() -> Unit)
+
+    fun prims(build: SlotPrimitiveFields.() -> Unit)
+    fun objs(build: SerialBuilder.() -> Unit)
 }

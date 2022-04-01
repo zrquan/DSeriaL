@@ -24,14 +24,10 @@ class AllTests : StringSpec({
                     type = SimpleSerializableClass::class.java,
                     uid = SimpleSerializableClass.serialVersionUID,
                     flags = SC_SERIALIZABLE
-                ) {
-                    primitiveFields {
-                        "i" ptype Int::class.java
-                    }
-                }
+                ) { "i" type Int::class.java }
             }
             slot {
-                primitiveFields {
+                prims {
                     intVal(1)
                 }
             }
@@ -50,24 +46,20 @@ class AllTests : StringSpec({
                     uid = NestedSerializableClass.serialVersionUID,
                     flags = SC_SERIALIZABLE
                 ) {
-                    primitiveFields {
-                        "f" ptype Float::class.java
-                        "i" ptype Int::class.java
-                    }
-                    objectFields {
-                        "c" otype Class::class.java
-                        "nested" otype NestedSerializableClass.NestedClass::class.java
-                        "other" otype SimpleSerializableClass::class.java
-                        "s" otype String::class.java
-                    }
+                    "f" type Float::class.java
+                    "i" type Int::class.java
+                    "c" type Class::class.java
+                    "nested" type NestedSerializableClass.NestedClass::class.java
+                    "other" type SimpleSerializableClass::class.java
+                    "s" type String::class.java
                 }
             }
             slot {
-                primitiveFields {
+                prims {
                     floatVal(10f)
                     intVal(1)
                 }
-                objectFields {
+                objs {
                     jclass {
                         desc(type = Serializable::class.java, flags = SC_SERIALIZABLE) {}
                     }
@@ -77,12 +69,10 @@ class AllTests : StringSpec({
                                 type = NestedSerializableClass.NestedClass::class.java,
                                 uid = NestedSerializableClass.NestedClass.serialVersionUID,
                                 flags = SC_SERIALIZABLE
-                            ) {
-                                primitiveFields { "l" ptype Long::class.java }
-                            }
+                            ) { "l" type Long::class.java }
                         }
                         slot {
-                            primitiveFields { longVal(5L) }
+                            prims { longVal(5L) }
                         }
                     }
                     nil()
@@ -104,18 +94,14 @@ class AllTests : StringSpec({
                 desc(
                     type = HierarchySub::class.java,
                     uid = HierarchySub.serialVersionUID,
-                ) {
-                    primitiveFields { "c" ptype Char::class.java }
-                }
+                ) { "c" type Char::class.java }
                 desc(
                     type = HierarchyBase::class.java,
                     uid = HierarchyBase.serialVersionUID,
-                ) {
-                    primitiveFields { "i" ptype Int::class.java }
-                }
+                ) { "i" type Int::class.java }
             }
-            slot { primitiveFields { intVal(5) } }
-            slot { primitiveFields { charVal('a') } }
+            slot { prims { intVal(5) } }
+            slot { prims { charVal('a') } }
         }
 
         val expectedData: ByteArray = serialize(HierarchySub(5, 'a'))
@@ -129,12 +115,10 @@ class AllTests : StringSpec({
                 desc(
                     type = ClassWithEnum::class.java,
                     uid = ClassWithEnum.serialVersionUID
-                ) {
-                    objectFields { "e" otype TestEnum::class.java }
-                }
+                ) { "e" type TestEnum::class.java }
             }
             slot {
-                objectFields {
+                objs {
                     enum("TEST") {
                         desc(
                             type = TestEnum::class.java,
@@ -161,17 +145,15 @@ class AllTests : StringSpec({
                     type = ClassWithArray::class.java,
                     uid = ClassWithArray.serialVersionUID,
                 ) {
-                    objectFields {
-                        "ints" otype IntArray::class.java
-                        "objects" otype Array<Any>::class.java
-                    }
+                    "ints" type IntArray::class.java
+                    "objects" type Array<Any>::class.java
                 }
             }
             slot {
-                objectFields {
+                objs {
                     array(type = IntArray::class.java) { +intArrayOf(1, 2, 3) }
                     array(type = Array<Serializable>::class.java) {
-                        objectElements {
+                        elements {
                             // bug: string("test \u0000 \u0100 \uD800\uDC00 \uDC00")
                             string("test")
                             serialObj {
@@ -179,14 +161,10 @@ class AllTests : StringSpec({
                                     desc(
                                         type = SimpleSerializableClass::class.java,
                                         uid = SimpleSerializableClass.serialVersionUID,
-                                    ) {
-                                        primitiveFields {
-                                            "i" ptype Int::class.java
-                                        }
-                                    }
+                                    ) { "i" type Int::class.java }
                                 }
                                 slot {
-                                    primitiveFields {
+                                    prims {
                                         intVal(1)
                                     }
                                 }
@@ -223,17 +201,15 @@ class AllTests : StringSpec({
 
                 string("test")
                 array(type = Array<Serializable>::class.java) {
-                    objectElements {
+                    elements {
                         serialObj {
                             descriptors {
                                 desc(
                                     type = SimpleSerializableClass::class.java,
                                     uid = SimpleSerializableClass.serialVersionUID
-                                ) {
-                                    primitiveFields { "i" ptype Int::class.java }
-                                }
+                                ) { "i" type Int::class.java }
                             }
-                            slot { primitiveFields { intVal(1) } }
+                            slot { prims { intVal(1) } }
                         }
                     }
                 }

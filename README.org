@@ -28,22 +28,18 @@ public class HierarchySub extends HierarchyBase {
 
 可使用以下代码：
 #+begin_src kotlin
-serial {
+Serial {
     descriptors {
         desc(
             type = HierarchySub::class.java,
             uid = HierarchySub.serialVersionUID,
-        ) {
-            primitiveFields { "c" ptype Char::class.java }
-        }
+        ) { "c" type Char::class.java }
         desc(
             type = HierarchyBase::class.java,
             uid = HierarchyBase.serialVersionUID,
-        ) {
-            primitiveFields { "i" ptype Int::class.java }
-        }
+        ) { "i" type Int::class.java }
     }
-    slot { primitiveFields { intVal(5) } }
-    slot { primitiveFields { charVal('a') } }
+    slot { prims { intVal(5) } }
+    slot { prims { charVal('a') } }
 }
 #+end_src
