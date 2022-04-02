@@ -20,11 +20,13 @@ class AllTests : StringSpec({
     "处理简单的可序列化类" {
         val actualData = Serial {
             descriptors {
-                desc(
-                    type = SimpleSerializableClass::class.java,
-                    uid = SimpleSerializableClass.serialVersionUID,
+                desc {
+                    type = SimpleSerializableClass::class.java
+                    uid = SimpleSerializableClass.serialVersionUID
                     flags = SC_SERIALIZABLE
-                ) { "i" type Int::class.java }
+
+                    "i" type Int::class.java
+                }
             }
             slot {
                 prims {
@@ -41,11 +43,11 @@ class AllTests : StringSpec({
     "处理嵌套关系" {
         val actualData = Serial {
             descriptors {
-                desc(
-                    type = NestedSerializableClass::class.java,
-                    uid = NestedSerializableClass.serialVersionUID,
+                desc {
+                    type = NestedSerializableClass::class.java
+                    uid = NestedSerializableClass.serialVersionUID
                     flags = SC_SERIALIZABLE
-                ) {
+
                     "f" type Float::class.java
                     "i" type Int::class.java
                     "c" type Class::class.java
@@ -61,15 +63,20 @@ class AllTests : StringSpec({
                 }
                 objs {
                     jclass {
-                        desc(type = Serializable::class.java, flags = SC_SERIALIZABLE) {}
+                        desc {
+                            type = Serializable::class.java
+                            flags = SC_SERIALIZABLE
+                        }
                     }
                     serialObj {
                         descriptors {
-                            desc(
-                                type = NestedSerializableClass.NestedClass::class.java,
-                                uid = NestedSerializableClass.NestedClass.serialVersionUID,
+                            desc {
+                                type = NestedSerializableClass.NestedClass::class.java
+                                uid = NestedSerializableClass.NestedClass.serialVersionUID
                                 flags = SC_SERIALIZABLE
-                            ) { "l" type Long::class.java }
+
+                                "l" type Long::class.java
+                            }
                         }
                         slot {
                             prims { longVal(5L) }
@@ -91,14 +98,18 @@ class AllTests : StringSpec({
     "处理继承关系" {
         val actualData = Serial {
             descriptors {
-                desc(
-                    type = HierarchySub::class.java,
-                    uid = HierarchySub.serialVersionUID,
-                ) { "c" type Char::class.java }
-                desc(
-                    type = HierarchyBase::class.java,
-                    uid = HierarchyBase.serialVersionUID,
-                ) { "i" type Int::class.java }
+                desc {
+                    type = HierarchySub::class.java
+                    uid = HierarchySub.serialVersionUID
+
+                    "c" type Char::class.java
+                }
+                desc {
+                    type = HierarchyBase::class.java
+                    uid = HierarchyBase.serialVersionUID
+
+                    "i" type Int::class.java
+                }
             }
             slot { prims { intVal(5) } }
             slot { prims { charVal('a') } }
@@ -112,22 +123,24 @@ class AllTests : StringSpec({
     "处理枚举类型" {
         val actualData = Serial {
             descriptors {
-                desc(
-                    type = ClassWithEnum::class.java,
+                desc {
+                    type = ClassWithEnum::class.java
                     uid = ClassWithEnum.serialVersionUID
-                ) { "e" type TestEnum::class.java }
+
+                    "e" type TestEnum::class.java
+                }
             }
             slot {
                 objs {
                     enum("TEST") {
-                        desc(
-                            type = TestEnum::class.java,
+                        desc {
+                            type = TestEnum::class.java
                             flags = SC_SERIALIZABLE or SC_ENUM
-                        ) {}
-                        desc(
-                            type = Enum::class.java,
+                        }
+                        desc {
+                            type = Enum::class.java
                             flags = SC_SERIALIZABLE or SC_ENUM
-                        ) {}
+                        }
                     }
                 }
             }
@@ -141,10 +154,10 @@ class AllTests : StringSpec({
     "处理数组类型" {
         val actualData = Serial {
             descriptors {
-                desc(
-                    type = ClassWithArray::class.java,
-                    uid = ClassWithArray.serialVersionUID,
-                ) {
+                desc {
+                    type = ClassWithArray::class.java
+                    uid = ClassWithArray.serialVersionUID
+
                     "ints" type IntArray::class.java
                     "objects" type Array<Any>::class.java
                 }
@@ -158,10 +171,12 @@ class AllTests : StringSpec({
                             string("test")
                             serialObj {
                                 descriptors {
-                                    desc(
-                                        type = SimpleSerializableClass::class.java,
-                                        uid = SimpleSerializableClass.serialVersionUID,
-                                    ) { "i" type Int::class.java }
+                                    desc {
+                                        type = SimpleSerializableClass::class.java
+                                        uid = SimpleSerializableClass.serialVersionUID
+
+                                        "i" type Int::class.java
+                                    }
                                 }
                                 slot {
                                     prims {
@@ -189,11 +204,11 @@ class AllTests : StringSpec({
     "处理 Externalizable 接口的实现类" {
         val actualData = External {
             descriptors {
-                desc(
-                    type = SimpleExternalizableClass::class.java,
-                    uid = SimpleExternalizableClass.serialVersionUID,
+                desc {
+                    type = SimpleExternalizableClass::class.java
+                    uid = SimpleExternalizableClass.serialVersionUID
                     flags = SC_EXTERNALIZABLE or SC_BLOCK_DATA
-                ) {}
+                }
             }
             writeExternal {
                 it.write(5)
@@ -204,10 +219,12 @@ class AllTests : StringSpec({
                     elements {
                         serialObj {
                             descriptors {
-                                desc(
-                                    type = SimpleSerializableClass::class.java,
+                                desc {
+                                    type = SimpleSerializableClass::class.java
                                     uid = SimpleSerializableClass.serialVersionUID
-                                ) { "i" type Int::class.java }
+
+                                    "i" type Int::class.java
+                                }
                             }
                             slot { prims { intVal(1) } }
                         }

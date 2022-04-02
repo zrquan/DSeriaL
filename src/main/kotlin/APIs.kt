@@ -5,19 +5,19 @@ typealias Block = () -> Unit
 @DslMarker
 annotation class DSeriaL
 
-@DSeriaL
-interface Descriptor {
-    infix fun String.type(type: Class<*>) {
-        if (type.isPrimitive) {
-            primitiveField(this, type.typeName)
-        } else {
-            objectField(this, type.typeName)
-        }
-    }
-
-    fun primitiveField(name: String, typeName: String)
-    fun objectField(name: String, typeName: String)
-}
+//@DSeriaL
+//interface Descriptor {
+//    infix fun String.type(type: Class<*>) {
+//        if (type.isPrimitive) {
+//            primitiveField(this, type.typeName)
+//        } else {
+//            objectField(this, type.typeName)
+//        }
+//    }
+//
+//    fun primitiveField(name: String, typeName: String)
+//    fun objectField(name: String, typeName: String)
+//}
 
 @DSeriaL
 interface TopLevel {

@@ -30,14 +30,18 @@ public class HierarchySub extends HierarchyBase {
 #+begin_src kotlin
 Serial {
     descriptors {
-        desc(
-            type = HierarchySub::class.java,
-            uid = HierarchySub.serialVersionUID,
-        ) { "c" type Char::class.java }
-        desc(
-            type = HierarchyBase::class.java,
-            uid = HierarchyBase.serialVersionUID,
-        ) { "i" type Int::class.java }
+        desc {
+            type = HierarchySub::class.java
+            uid = HierarchySub.serialVersionUID
+
+            "c" type Char::class.java
+        }
+        desc {
+            type = HierarchyBase::class.java
+            uid = HierarchyBase.serialVersionUID
+
+            "i" type Int::class.java
+        }
     }
     slot { prims { intVal(5) } }
     slot { prims { charVal('a') } }

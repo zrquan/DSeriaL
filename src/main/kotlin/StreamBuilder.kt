@@ -118,7 +118,13 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         onStartedObject(true)
 
         initDescriptorHierarchy(unassignedHandle)
-        descriptors { desc(type = type, uid = uid, flags = flags) {} }
+        descriptors {
+            desc {
+                this.type = type
+                this.uid = uid
+                this.flags = flags
+            }
+        }
 
         this.build()
 

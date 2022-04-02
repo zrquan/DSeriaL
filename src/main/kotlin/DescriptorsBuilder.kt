@@ -2,40 +2,75 @@ import java.io.ObjectStreamClass
 import java.io.ObjectStreamConstants.*
 import java.util.concurrent.atomic.AtomicInteger
 
+class Descriptor(val handle: Handle, val nextHandleIndex: AtomicInteger) {
+    var fieldActions: MutableList<(UncheckedBlockDataOutputStream) -> Unit> = mutableListOf()
+
+    lateinit var type: Class<*>
+    var uid: Long? = null
+    var flags: Byte = SC_SERIALIZABLE
+
+    infix fun String.type(type: Class<*>) {
+        if (type.isPrimitive) {
+            primitiveField(this, type.typeName)
+        } else {
+            objectField(this, type.typeName)
+        }
+    }
+
+    private fun primitiveField(name: String, typeName: String) {
+        val jvmTypeName = getJvmTypeName(typeName)
+        if (jvmTypeName.length != 1) {
+            throw Exception("Invalid primitive type name: $typeName")
+        }
+
+        fieldActions.add {
+            it.writeByte(jvmTypeName.first().code)
+            it.writeUTF(name)
+        }
+    }
+
+    private fun objectField(name: String, typeName: String) {
+        val nameBuilder = StringBuilder()
+        var elementTypeName = typeName
+
+        while (elementTypeName.endsWith("[]")) {
+            nameBuilder.append("[")
+            elementTypeName = elementTypeName.substringBeforeLast("[")
+        }
+
+        val jvmTypeName = nameBuilder.append(getJvmTypeName(elementTypeName)).toString()
+
+        nextHandleIndex.getAndIncrement()
+
+        fieldActions.add {
+            it.writeByte(jvmTypeName[0].code)
+            it.writeUTF(name)
+            it.writeSerialString(jvmTypeName)
+        }
+    }
+}
+
 class DescriptorsBuilder(
     private val parent: Any,
     private val nextHandleIndex: AtomicInteger,
     private val postDescriptorHierarchyHandle: Handle,
     private var isEnum: Boolean = false,
     private val output: ((UncheckedBlockDataOutputStream) -> Unit) -> Unit
-) : Descriptor {
-    private lateinit var fieldActions: MutableList<(UncheckedBlockDataOutputStream) -> Unit>
-
-    private var descriptorName: String = ""
-    private var uid: Long = 0L
-    private var flags: Byte = SC_SERIALIZABLE
+) {
+    private lateinit var currentDesc: Descriptor
 
     fun desc(
         unassignedHandle: Handle = Handle(),
-        type: Class<*>,
-        uid: Long? = null,
-        flags: Byte = SC_SERIALIZABLE,
         build: Descriptor.() -> Unit
     ) {
         val handleIndex = nextHandleIndex.getAndIncrement()
         Handle.assignIndex(unassignedHandle, handleIndex)
 
         output { it.writeByte(TC_CLASSDESC.toInt()) }
-        fieldActions = mutableListOf()
 
-        this.uid = if (this.isEnum) {
-            check(type.isEnum || type == Enum::class.java) { "Not an Enum class: ${type.typeName}" }
-            0  // Enum uses 0 as UID
-        } else uid ?: getUidByType(type)
+        currentDesc = Descriptor(unassignedHandle, nextHandleIndex)
+        currentDesc.build()
 
-        this.descriptorName = typeNameToClassGetName(type.typeName)
-        this.flags = flags
-        this.build()
         endDesc()
     }
 
@@ -74,20 +109,29 @@ class DescriptorsBuilder(
     }
 
     private fun endDesc() {
-        val fieldsCount = fieldActions.size
-        output {
-            it.writeUTF(descriptorName)
-            it.writeLong(uid)
-            it.writeByte(flags.toInt())
-            it.writeShort(fieldsCount)
+        with(currentDesc) {
+            val descriptorName = typeNameToClassGetName(type.typeName)
+            val uid = if (this@DescriptorsBuilder.isEnum) {
+                check(type.isEnum || type == Enum::class.java) { "Not an Enum class: ${type.typeName}" }
+                0  // Enum uses 0 as UID
+            } else this.uid ?: getUidByType(type)
+
+            val fieldsCount = fieldActions.size
+
+            output {
+                it.writeUTF(descriptorName)
+                it.writeLong(uid)
+                it.writeByte(flags.toInt())
+                it.writeShort(fieldsCount)
+            }
+            fieldActions.forEach(output)
+            output {
+                it.setBlockDataMode(true)
+                it.setBlockDataMode(false)
+                it.writeByte(TC_ENDBLOCKDATA.toInt())
+            }
+            fieldActions.clear()
         }
-        fieldActions.forEach(output)
-        output {
-            it.setBlockDataMode(true)
-            it.setBlockDataMode(false)
-            it.writeByte(TC_ENDBLOCKDATA.toInt())
-        }
-        fieldActions.clear()
     }
 
     fun finish() {
@@ -98,49 +142,18 @@ class DescriptorsBuilder(
     private fun finishAndGetParent() {
         Handle.assignIndex(postDescriptorHierarchyHandle, nextHandleIndex.getAndIncrement())
     }
-
-    private fun getJvmTypeName(name: String) =
-        when (name) {
-            "int" -> "I"
-            "byte" -> "B"
-            "char" -> "C"
-            "long" -> "J"
-            "float" -> "F"
-            "short" -> "S"
-            "double" -> "D"
-            "boolean" -> "Z"
-            else -> "L${name.replace(".", "/")};"
-        }
-
-    override fun primitiveField(name: String, typeName: String) {
-        val jvmTypeName = getJvmTypeName(typeName)
-        if (jvmTypeName.length != 1) {
-            throw Exception("Invalid primitive type name: $typeName")
-        }
-
-        fieldActions.add {
-            it.writeByte(jvmTypeName.first().code)
-            it.writeUTF(name)
-        }
-    }
-
-    override fun objectField(name: String, typeName: String) {
-        val nameBuilder = StringBuilder()
-        var elementTypeName = typeName
-
-        while (elementTypeName.endsWith("[]")) {
-            nameBuilder.append("[")
-            elementTypeName = elementTypeName.substringBeforeLast("[")
-        }
-
-        val jvmTypeName = nameBuilder.append(getJvmTypeName(elementTypeName)).toString()
-
-        nextHandleIndex.getAndIncrement()
-
-        fieldActions.add {
-            it.writeByte(jvmTypeName[0].code)
-            it.writeUTF(name)
-            it.writeSerialString(jvmTypeName)
-        }
-    }
 }
+
+fun getJvmTypeName(name: String) =
+    when (name) {
+        "int" -> "I"
+        "byte" -> "B"
+        "char" -> "C"
+        "long" -> "J"
+        "float" -> "F"
+        "short" -> "S"
+        "double" -> "D"
+        "boolean" -> "Z"
+        else -> "L${name.replace(".", "/")};"
+    }
+
