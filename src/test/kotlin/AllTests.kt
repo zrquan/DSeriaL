@@ -201,6 +201,23 @@ class AllTests : StringSpec({
         actualData?.toHex() shouldBe expectedData.toHex()
     }
 
+    fun StreamBuilder.writeArray() =
+        array(type = Array<Serializable>::class.java) {
+            elements {
+                serialObj {
+                    descriptors {
+                        desc {
+                            type = SimpleSerializableClass::class.java
+                            uid = SimpleSerializableClass.serialVersionUID
+
+                            "i" type Int::class.java
+                        }
+                    }
+                    slot { prims { intVal(1) } }
+                }
+            }
+        }
+
     "处理 Externalizable 接口的实现类" {
         val actualData = External {
             descriptors {
@@ -215,25 +232,48 @@ class AllTests : StringSpec({
                 it.writeBoolean(true)
 
                 string("test")
-                array(type = Array<Serializable>::class.java) {
-                    elements {
-                        serialObj {
-                            descriptors {
-                                desc {
-                                    type = SimpleSerializableClass::class.java
-                                    uid = SimpleSerializableClass.serialVersionUID
+                writeArray()
+            }
+        }
 
-                                    "i" type Int::class.java
-                                }
+        val expectedData = serialize(SimpleExternalizableClass())
+
+        actualData?.toHex() shouldBe expectedData.toHex()
+    }
+
+    "处理 Externalizable 实现类的嵌套" {
+        val actualData = Serial {
+            descriptors {
+                desc {
+                    type = ClassWithExternalizable::class.java
+                    uid = ClassWithExternalizable.serialVersionUID
+
+                    "e" type SimpleExternalizableClass::class.java
+                }
+            }
+            slot {
+                objs {
+                    serialObj {
+                        descriptors {
+                            desc {
+                                type = SimpleExternalizableClass::class.java
+                                uid = SimpleExternalizableClass.serialVersionUID
+                                flags = SC_EXTERNALIZABLE or SC_BLOCK_DATA
                             }
-                            slot { prims { intVal(1) } }
+                        }
+                        writeExternal {
+                            it.write(5)
+                            it.writeBoolean(true)
+
+                            string("test")
+                            writeArray()
                         }
                     }
                 }
             }
         }
 
-        val expectedData = serialize(SimpleExternalizableClass())
+        val expectedData = serialize(ClassWithExternalizable(SimpleExternalizableClass()))
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }
