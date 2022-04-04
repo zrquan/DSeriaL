@@ -2,6 +2,8 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.io.*
 import java.io.ObjectStreamConstants.*
+import java.lang.reflect.InvocationHandler
+import java.lang.reflect.Proxy
 import kotlin.experimental.or
 
 fun serialize(obj: Serializable): ByteArray {
@@ -274,6 +276,40 @@ class AllTests : StringSpec({
         }
 
         val expectedData = serialize(ClassWithExternalizable(SimpleExternalizableClass()))
+
+        actualData?.toHex() shouldBe expectedData.toHex()
+    }
+
+    "动态代理" {
+        val proxyObj = Proxy.newProxyInstance(
+            this::class.java.classLoader,
+            arrayOf(InterfaceA::class.java, InterfaceB::class.java),
+            SerializableInvocationHandler()
+        )
+
+        val actualData = Serial {
+            descriptors {
+                proxy(InterfaceA::class.java, InterfaceB::class.java)
+                desc {
+                    type = Proxy::class.java
+                    "h" type InvocationHandler::class.java
+                }
+            }
+            slot {
+                objs {
+                    serialObj {
+                        descriptors {
+                            desc {
+                                type = SerializableInvocationHandler::class.java
+                                uid = SerializableInvocationHandler.serialVersionUID
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        val expectedData = serialize(proxyObj as Serializable)
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }

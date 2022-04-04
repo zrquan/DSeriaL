@@ -59,6 +59,31 @@ class DescriptorsBuilder(
 ) {
     private lateinit var currentDesc: Descriptor
 
+    fun proxy(vararg interfaces: Class<*>) = proxy(Handle(), *interfaces)
+
+    fun proxy(unassignedHandle: Handle, vararg interfaces: Class<*>) {
+        val interfaceNames = getInterfaceNames(*interfaces)
+        Handle.assignIndex(unassignedHandle, nextHandleIndex.getAndIncrement())
+
+        output {
+            it.writeByte(TC_PROXYCLASSDESC.toInt())
+            it.writeInt(interfaceNames.size)
+            for (name in interfaceNames) {
+                it.writeUTF(typeNameToClassGetName(name))
+            }
+
+            it.setBlockDataMode(true)
+            it.setBlockDataMode(false)
+            it.writeByte(TC_ENDBLOCKDATA.toInt())
+        }
+    }
+
+    private fun getInterfaceNames(vararg interfaces: Class<*>) =
+        interfaces.map {
+            if (!it.isInterface) throw IllegalArgumentException("Not a interface: ${it.typeName}")
+            it.typeName
+        }
+
     fun desc(
         unassignedHandle: Handle = Handle(),
         build: Descriptor.() -> Unit
