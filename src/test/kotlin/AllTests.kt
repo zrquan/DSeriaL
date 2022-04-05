@@ -243,7 +243,7 @@ class AllTests : StringSpec({
         actualData?.toHex() shouldBe expectedData.toHex()
     }
 
-    "处理 Externalizable 实现类的嵌套" {
+    "处理 Externalizable 实现类的嵌套关系" {
         val actualData = Serial {
             descriptors {
                 desc {
@@ -276,6 +276,34 @@ class AllTests : StringSpec({
         }
 
         val expectedData = serialize(ClassWithExternalizable(SimpleExternalizableClass()))
+
+        actualData?.toHex() shouldBe expectedData.toHex()
+    }
+
+    "处理 Externalizable 实现类的继承关系" {
+        val actualData = External {
+            descriptors {
+                desc {
+                    type = ExternalExtendsSerial::class.java
+                    uid = ExternalExtendsSerial.serialVersionUID
+                    flags = SC_EXTERNALIZABLE or SC_BLOCK_DATA
+                }
+                desc {
+                    type = SimpleSerializableClass::class.java
+                    uid = SimpleSerializableClass.serialVersionUID
+
+                    "i" type Int::class.java
+                }
+            }
+            writeExternal {
+                it.writeInt(5)
+                it.writeBoolean(true)
+
+                string("test")
+            }
+        }
+
+        val expectedData = serialize(ExternalExtendsSerial(10))
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }

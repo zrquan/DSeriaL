@@ -1,20 +1,26 @@
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class SimpleExternalizableClass implements Externalizable {
+public class ExternalExtendsSerial extends SimpleSerializableClass implements Externalizable {
     public static final long serialVersionUID = 1L;
 
-    @SuppressWarnings("unused")
-    public int i;
+    public ExternalExtendsSerial() {
+        this(1);
+    }
+
+    public ExternalExtendsSerial(int i) {
+        super(i);
+    }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(5);
         out.writeBoolean(true);
-
         out.writeObject("test");
-        out.writeObject(new Serializable[]{new SimpleSerializableClass(1)});
     }
 
     @Override
