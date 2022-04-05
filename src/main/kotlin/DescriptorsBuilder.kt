@@ -5,8 +5,11 @@ import java.util.concurrent.atomic.AtomicInteger
 class Descriptor(val handle: Handle, val nextHandleIndex: AtomicInteger) {
     var fieldActions: MutableList<(UncheckedBlockDataOutputStream) -> Unit> = mutableListOf()
 
+    @DSeriaL
     lateinit var type: Class<*>
+    @DSeriaL
     var uid: Long? = null
+    @DSeriaL
     var flags: Byte = SC_SERIALIZABLE
 
     infix fun String.type(type: Class<*>) {

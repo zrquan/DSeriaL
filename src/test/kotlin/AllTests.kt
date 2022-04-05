@@ -65,10 +65,8 @@ class AllTests : StringSpec({
                 }
                 objs {
                     jclass {
-                        desc {
-                            type = Serializable::class.java
-                            flags = SC_SERIALIZABLE
-                        }
+                        type = Serializable::class.java
+                        flags = SC_SERIALIZABLE
                     }
                     serialObj {
                         descriptors {

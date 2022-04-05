@@ -28,7 +28,7 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         finish()
     }
 
-    fun jclass(unassignedHandle: Handle = Handle(), build: DescriptorsBuilder.() -> Unit) {
+    fun jclass(unassignedHandle: Handle = Handle(), build: Descriptor.() -> Unit) {
         nestingDepth++
 
         val oldMode = AtomicBoolean()
@@ -43,7 +43,7 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         onStartedObject(false)
 
         initDescriptorHierarchy(unassignedHandle)
-        descriptors(build)
+        descriptors { desc(build = build) }
 
         // end class
         nestingDepth--
