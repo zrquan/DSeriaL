@@ -1,5 +1,7 @@
 import java.io.ObjectStreamClass
 import java.io.ObjectStreamConstants.*
+import java.lang.reflect.InvocationHandler
+import java.lang.reflect.Proxy
 import java.util.concurrent.atomic.AtomicInteger
 
 class Descriptor(val handle: Handle, val nextHandleIndex: AtomicInteger) {
@@ -78,6 +80,11 @@ class DescriptorsBuilder(
             it.setBlockDataMode(true)
             it.setBlockDataMode(false)
             it.writeByte(TC_ENDBLOCKDATA.toInt())
+        }
+
+        this.desc {
+            type = Proxy::class.java
+            "h" type InvocationHandler::class.java
         }
     }
 

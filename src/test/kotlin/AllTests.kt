@@ -314,13 +314,7 @@ class AllTests : StringSpec({
         )
 
         val actualData = Serial {
-            descriptors {
-                proxy(InterfaceA::class.java, InterfaceB::class.java)
-                desc {
-                    type = Proxy::class.java
-                    "h" type InvocationHandler::class.java
-                }
-            }
+            descriptors { proxy(InterfaceA::class.java, InterfaceB::class.java) }
             slot {
                 objs {
                     serialObj {
