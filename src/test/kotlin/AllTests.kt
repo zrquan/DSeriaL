@@ -341,4 +341,29 @@ class AllTests : StringSpec({
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }
+
+    "自定义 writeObject 方法" {
+        val actualData = Serial {
+            descriptors {
+                desc {
+                    type = ClassWithWriteObject::class.java
+                    uid = ClassWithWriteObject.serialVersionUID
+                    flags = SC_SERIALIZABLE or SC_WRITE_METHOD
+                }
+            }
+            slot {
+                writeObject {
+                    it.writeInt(5)
+                    it.writeBoolean(true)
+
+                    string("test")
+                    writeArray()
+                }
+            }
+        }
+
+        val expectedData = serialize(ClassWithWriteObject())
+
+        actualData?.toHex() shouldBe expectedData.toHex()
+    }
 })

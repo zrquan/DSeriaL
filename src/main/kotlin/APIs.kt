@@ -64,4 +64,6 @@ interface Slot {
 
     fun prims(build: SlotPrimitiveFields.() -> Unit)
     fun objs(build: StreamBuilder.() -> Unit)
+
+    fun writeObject(build: StreamBuilder.(DataOutput) -> Unit)
 }

@@ -187,6 +187,25 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         }
     }
 
+    override fun writeObject(build: StreamBuilder.(DataOutput) -> Unit) {
+        hasWrittenSlot.last.set(true)
+        run { out.setBlockDataMode(true) }
+
+        writeData(build)
+
+        val fieldActions = this.fieldActions.removeLast()
+        if (fieldActions.isNotEmpty()) {
+            out.setBlockDataMode(false)
+            fieldActions.forEach(::run)
+            out.setBlockDataMode(true)
+        }
+
+        run {
+            out.setBlockDataMode(false)
+            out.writeByte(TC_ENDBLOCKDATA.toInt())
+        }
+    }
+
     /**
      * 目前只实现 V2 版本的序列化协议，所以默认开启 BlockData 模式
      * @see java.io.ObjectStreamConstants.PROTOCOL_VERSION_2
@@ -194,18 +213,20 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
     override fun writeExternal(build: StreamBuilder.(DataOutput) -> Unit) {
         run { out.setBlockDataMode(true) }
 
-        writeExternalData(build)
+        writeData(build)
 
-        run { out.setBlockDataMode(false) }
-        run { out.writeByte(TC_ENDBLOCKDATA.toInt()) }
+        run {
+            out.setBlockDataMode(false)
+            out.writeByte(TC_ENDBLOCKDATA.toInt())
+        }
     }
 
     /**
-     * 用于计算 Externalizable 对象的嵌套层数，在调用 [writeExternalData] 时递增
+     * 用于计算 Externalizable 对象的嵌套层数，在调用 [writeData] 时递增
      */
     private var currentScopeIndex = -1
 
-    private fun writeExternalData(build: StreamBuilder.(DataOutput) -> Unit) {
+    private fun writeData(build: StreamBuilder.(DataOutput) -> Unit) {
         val originNestingDepth = nestingDepth
         val scopeIndex = ++currentScopeIndex
 
