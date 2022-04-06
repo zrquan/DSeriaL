@@ -10,6 +10,8 @@ class Descriptor(val handle: Handle, val nextHandleIndex: AtomicInteger) {
     @DSeriaL
     lateinit var type: Class<*>
 
+    var typeName: String? = null
+
     @DSeriaL
     var uid: Long? = null
 
@@ -23,6 +25,8 @@ class Descriptor(val handle: Handle, val nextHandleIndex: AtomicInteger) {
             objectDesc(this, type.typeName)
         }
     }
+
+    infix fun String.typeName(typeName: String) = objectDesc(this, typeName)
 
     private fun primitiveDesc(name: String, typeName: String) {
         val typeCode = getTypeCode(typeName)
@@ -148,7 +152,7 @@ class DescriptorsBuilder(
 
     private fun endDesc() {
         with(currentDesc) {
-            val descriptorName = typeNameToClassGetName(type.typeName)
+            val descriptorName = typeName ?: typeNameToClassGetName(type.typeName)
             val uid = if (this@DescriptorsBuilder.isEnum) {
                 check(type.isEnum || type == Enum::class.java) { "Not an Enum class: ${type.typeName}" }
                 0  // Enum uses 0 as UID
