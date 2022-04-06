@@ -9,32 +9,34 @@ class Descriptor(val handle: Handle, val nextHandleIndex: AtomicInteger) {
 
     @DSeriaL
     lateinit var type: Class<*>
+
     @DSeriaL
     var uid: Long? = null
+
     @DSeriaL
     var flags: Byte = SC_SERIALIZABLE
 
     infix fun String.type(type: Class<*>) {
         if (type.isPrimitive) {
-            primitiveField(this, type.typeName)
+            primitiveDesc(this, type.typeName)
         } else {
-            objectField(this, type.typeName)
+            objectDesc(this, type.typeName)
         }
     }
 
-    private fun primitiveField(name: String, typeName: String) {
-        val jvmTypeName = getJvmTypeName(typeName)
-        if (jvmTypeName.length != 1) {
+    private fun primitiveDesc(name: String, typeName: String) {
+        val typeCode = getTypeCode(typeName)
+        if (typeCode.length != 1) {
             throw Exception("Invalid primitive type name: $typeName")
         }
 
         fieldActions.add {
-            it.writeByte(jvmTypeName.first().code)
+            it.writeByte(typeCode.first().code)
             it.writeUTF(name)
         }
     }
 
-    private fun objectField(name: String, typeName: String) {
+    private fun objectDesc(name: String, typeName: String) {
         val nameBuilder = StringBuilder()
         var elementTypeName = typeName
 
@@ -43,14 +45,15 @@ class Descriptor(val handle: Handle, val nextHandleIndex: AtomicInteger) {
             elementTypeName = elementTypeName.substringBeforeLast("[")
         }
 
-        val jvmTypeName = nameBuilder.append(getJvmTypeName(elementTypeName)).toString()
+        // String containing the field's type, in field descriptor format
+        val className1 = nameBuilder.append(getTypeCode(elementTypeName)).toString()
 
         nextHandleIndex.getAndIncrement()
 
         fieldActions.add {
-            it.writeByte(jvmTypeName[0].code)
+            it.writeByte(className1[0].code)
             it.writeUTF(name)
-            it.writeSerialString(jvmTypeName)
+            it.writeSerialString(className1)
         }
     }
 }
@@ -179,7 +182,7 @@ class DescriptorsBuilder(
     }
 }
 
-fun getJvmTypeName(name: String) =
+fun getTypeCode(name: String) =
     when (name) {
         "int" -> "I"
         "byte" -> "B"
@@ -191,4 +194,3 @@ fun getJvmTypeName(name: String) =
         "boolean" -> "Z"
         else -> "L${name.replace(".", "/")};"
     }
-
