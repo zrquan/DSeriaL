@@ -188,17 +188,17 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
     }
 
     override fun writeObject(build: StreamBuilder.(DataOutput) -> Unit) {
-        hasWrittenSlot.last.set(true)
+//        hasWrittenSlot.last.set(true)
         run { out.setBlockDataMode(true) }
 
         writeData(build)
 
-        val fieldActions = this.fieldActions.removeLast()
-        if (fieldActions.isNotEmpty()) {
-            out.setBlockDataMode(false)
-            fieldActions.forEach(::run)
-            out.setBlockDataMode(true)
-        }
+//        val fieldActions = this.fieldActions.removeLast()
+//        if (fieldActions.isNotEmpty()) {
+//            out.setBlockDataMode(false)
+//            fieldActions.forEach(::run)
+//            out.setBlockDataMode(true)
+//        }
 
         run {
             out.setBlockDataMode(false)
@@ -290,17 +290,17 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         descriptorsBuilder.finish()
     }
 
-    private val hasWrittenSlot: Deque<AtomicBoolean> = LinkedList()
-    private val fieldActions: Deque<Queue<Block>> = LinkedList()  // ?
+//    private val hasWrittenSlot: Deque<AtomicBoolean> = LinkedList()
+//    private val fieldActions: Deque<Queue<Block>> = LinkedList()  // ?
 
     override fun slot(build: Slot.() -> Unit) {
-        hasWrittenSlot.addLast(AtomicBoolean(false))
-        fieldActions.addLast(LinkedList())
+//        hasWrittenSlot.addLast(AtomicBoolean(false))
+//        fieldActions.addLast(LinkedList())
         this.build()
 
-        if (!hasWrittenSlot.removeLast().get()) {
-            this.fieldActions.removeLast().forEach(::run)
-        }
+//        if (!hasWrittenSlot.removeLast().get()) {
+//            this.fieldActions.removeLast().forEach(::run)
+//        }
     }
 
     private lateinit var primitiveFieldsActions: MutableList<(DataOutputStream) -> Unit>
