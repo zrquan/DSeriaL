@@ -18,7 +18,7 @@ fun Serial(
 @DSeriaL
 fun External(
     unassignedHandle: Handle = Handle(),
-    build: ExternalTopLevel.() -> Unit
+    build: ExternalContent.() -> Unit
 ): ByteArray? =
     with(StreamBuilder()) {
         beginSerializableObject(unassignedHandle)

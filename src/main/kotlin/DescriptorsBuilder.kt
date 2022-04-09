@@ -89,7 +89,7 @@ class DescriptorsBuilder(
             it.writeByte(TC_ENDBLOCKDATA.toInt())
         }
 
-        this.desc {
+        this.new {
             type = Proxy::class.java
             "h" type InvocationHandler::class.java
         }
@@ -101,7 +101,10 @@ class DescriptorsBuilder(
             it.typeName
         }
 
-    fun desc(
+    /**
+     * newClassDesc (not a dynamic proxy class)
+     */
+    fun new(
         unassignedHandle: Handle = Handle(),
         build: Descriptor.() -> Unit
     ) {

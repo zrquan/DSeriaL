@@ -5,43 +5,18 @@ typealias Block = () -> Unit
 @DslMarker
 annotation class DSeriaL
 
-//@DSeriaL
-//interface Descriptor {
-//    infix fun String.type(type: Class<*>) {
-//        if (type.isPrimitive) {
-//            primitiveField(this, type.typeName)
-//        } else {
-//            objectField(this, type.typeName)
-//        }
-//    }
-//
-//    fun primitiveField(name: String, typeName: String)
-//    fun objectField(name: String, typeName: String)
-//}
-
 @DSeriaL
 interface TopLevel {
-    fun descriptors(build: DescriptorsBuilder.() -> Unit)
+    fun desc(build: DescriptorsBuilder.() -> Unit)
 }
 
 interface SerialTopLevel : TopLevel {
-    fun slot(build: Slot.() -> Unit)
+    fun values(build: ClassData.() -> Unit)
+    fun writeObject(build: StreamBuilder.(DataOutput) -> Unit)
 }
 
-interface ExternalTopLevel : TopLevel {
+interface ExternalContent : TopLevel {
     fun writeExternal(build: StreamBuilder.(DataOutput) -> Unit)
-}
-
-@DSeriaL
-interface SlotPrimitiveFields {
-    fun intVal(i: Int)
-    fun byteVal(b: Byte)
-    fun charVal(c: Char)
-    fun longVal(j: Long)
-    fun floatVal(f: Float)
-    fun shortVal(s: Short)
-    fun doubleVal(d: Double)
-    fun booleanVal(z: Boolean)
 }
 
 @DSeriaL
@@ -58,12 +33,15 @@ interface ArrayElements {
 }
 
 @DSeriaL
-interface Slot {
-    fun primitiveFields(build: SlotPrimitiveFields.() -> Unit)
-    fun objectFields(build: StreamBuilder.() -> Unit)
+interface ClassData {
+    fun int(i: Int)
+    fun byte(b: Byte)
+    fun char(c: Char)
+    fun long(j: Long)
+    fun float(f: Float)
+    fun short(s: Short)
+    fun double(d: Double)
+    fun boolean(z: Boolean)
 
-    fun prims(build: SlotPrimitiveFields.() -> Unit)
-    fun objs(build: StreamBuilder.() -> Unit)
-
-    fun writeObject(build: StreamBuilder.(DataOutput) -> Unit)
+    fun obj(build: StreamBuilder.() -> Unit)
 }

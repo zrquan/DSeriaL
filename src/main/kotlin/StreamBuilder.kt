@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 
-class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveFields, ArrayElements {
+class StreamBuilder : SerialTopLevel, ExternalContent, ClassData, ArrayElements {
     private var nestingDepth = 0
     private val nextHandleIndex = AtomicInteger(0)
     private val pendingPostObjectActions: Deque<Block> = LinkedList()
@@ -22,13 +22,16 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
 
     private lateinit var descriptorsBuilder: DescriptorsBuilder
 
-    fun serialObj(unassignedHandle: Handle = Handle(), build: StreamBuilder.() -> Unit) {
+    /**
+     * newObject: TC_OBJECT classDesc newHandle classdata[]
+     */
+    fun new(unassignedHandle: Handle = Handle(), build: StreamBuilder.() -> Unit) {
         beginSerializableObject(unassignedHandle)
         this.build()
         finish()
     }
 
-    fun jclass(unassignedHandle: Handle = Handle(), build: Descriptor.() -> Unit) {
+    fun clazz(unassignedHandle: Handle = Handle(), build: Descriptor.() -> Unit) {
         nestingDepth++
 
         val oldMode = AtomicBoolean()
@@ -43,7 +46,7 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         onStartedObject(false)
 
         initDescriptorHierarchy(unassignedHandle)
-        descriptors { desc(build = build) }
+        desc { new(build = build) }
 
         // end class
         nestingDepth--
@@ -86,7 +89,7 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         onStartedObject(false)
 
         initDescriptorHierarchy(unassignedHandle, isEnum = true)
-        descriptors(build)
+        desc(build)
 
         // write constant name
         nextHandleIndex.getAndIncrement()
@@ -118,8 +121,8 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         onStartedObject(true)
 
         initDescriptorHierarchy(unassignedHandle)
-        descriptors {
-            desc {
+        desc {
+            new {
                 this.type = type
                 this.uid = uid
                 this.flags = flags
@@ -285,101 +288,32 @@ class StreamBuilder : SerialTopLevel, ExternalTopLevel, Slot, SlotPrimitiveField
         currentScopeIndex--
     }
 
-    override fun descriptors(build: DescriptorsBuilder.() -> Unit) {
+    override fun desc(build: DescriptorsBuilder.() -> Unit) {
         descriptorsBuilder.build()
         descriptorsBuilder.finish()
     }
 
-//    private val hasWrittenSlot: Deque<AtomicBoolean> = LinkedList()
-//    private val fieldActions: Deque<Queue<Block>> = LinkedList()  // ?
+    private lateinit var primActions: MutableList<(DataOutputStream) -> Unit>
 
-    override fun slot(build: Slot.() -> Unit) {
-//        hasWrittenSlot.addLast(AtomicBoolean(false))
-//        fieldActions.addLast(LinkedList())
-        this.build()
+    override fun values(build: ClassData.() -> Unit) = this.build()
 
-//        if (!hasWrittenSlot.removeLast().get()) {
-//            this.fieldActions.removeLast().forEach(::run)
-//        }
-    }
+    override fun obj(build: StreamBuilder.() -> Unit) = this.build()
 
-    private lateinit var primitiveFieldsActions: MutableList<(DataOutputStream) -> Unit>
+    override fun char(c: Char) = run { out.writeChar(c.code) }
 
-    override fun primitiveFields(build: SlotPrimitiveFields.() -> Unit) {
-        primitiveFieldsActions = mutableListOf()
-        this.build()
+    override fun long(j: Long) = run { out.writeLong(j) }
 
-        // Write primitive field values to output stream
-        val tempOut = ByteArrayOutputStream()
-        val dataOut = DataOutputStream(tempOut)
+    override fun float(f: Float) = run { out.writeFloat(f) }
 
-        primitiveFieldsActions.forEach { it(dataOut) }
-        primitiveFieldsActions.clear()
+    override fun short(s: Short) = run { out.writeShort(s.toInt()) }
 
-        try {
-            dataOut.close()
-        } catch (e: IOException) {
-            throw UncheckedIOException(e)
-        }
+    override fun double(d: Double) = run { out.writeDouble(d) }
 
-        run { out.write(tempOut.toByteArray()) }
-    }
+    override fun boolean(z: Boolean) = run { out.writeBoolean(z) }
 
-    override fun objectFields(build: StreamBuilder.() -> Unit) = this.build()
+    override fun int(i: Int) = run { out.writeInt(i) }
 
-    override fun prims(build: SlotPrimitiveFields.() -> Unit) = primitiveFields(build)
-
-    override fun objs(build: StreamBuilder.() -> Unit) = objectFields(build)
-
-    override fun charVal(c: Char) {
-        primitiveFieldsActions.add {
-            it.writeChar(c.code)
-        }
-    }
-
-    override fun longVal(j: Long) {
-        primitiveFieldsActions.add {
-            it.writeLong(j)
-        }
-    }
-
-    override fun floatVal(f: Float) {
-        primitiveFieldsActions.add {
-            it.writeFloat(f)
-        }
-    }
-
-    override fun shortVal(s: Short) {
-        primitiveFieldsActions.add {
-            it.writeShort(s.toInt())
-        }
-    }
-
-    override fun doubleVal(d: Double) {
-        primitiveFieldsActions.add {
-            it.writeDouble(d)
-        }
-    }
-
-    override fun booleanVal(z: Boolean) {
-        primitiveFieldsActions.add {
-            primitiveFieldsActions.add {
-                it.writeBoolean(z)
-            }
-        }
-    }
-
-    override fun intVal(i: Int) {
-        primitiveFieldsActions.add {
-            it.writeInt(i)
-        }
-    }
-
-    override fun byteVal(b: Byte) {
-        primitiveFieldsActions.add {
-            it.writeByte(b.toInt())
-        }
-    }
+    override fun byte(b: Byte) = run { out.writeByte(b.toInt()) }
 
     fun finish(): ByteArray? {
         nestingDepth--
