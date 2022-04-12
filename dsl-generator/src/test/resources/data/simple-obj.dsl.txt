@@ -1,0 +1,14 @@
+Serial {
+    desc {
+        new {
+            typeName = "SimpleSerializableClass"
+            uid = 1L
+            flags = SC_SERIALIZABLE
+
+            "i" typeName "java.lang.Int"
+        }
+    }
+    values {
+        int(1)
+    }
+}
